@@ -384,81 +384,90 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
             Sonuçlarınıza göre en çok dikkat gerektiren alanlar ve size özel öneriler:
           </p>
 
-          <div className="grid gap-5">
-            {sortedByDiff.slice(0, 3).map((cat, i) => {
-              const p = parentScores[cat] || 3;
-              const c = childScores[cat] || 3;
-              const diff = p - c;
-              const absDiff = Math.abs(diff);
-              const insight = categoryInsights[cat];
-              let actions: string[] = [];
-              
-              if (absDiff === 0) {
-                actions = insight.actions.match;
-              } else if (diff > 0) {
-                actions = insight.actions.parentHigh;
-              } else {
-                actions = insight.actions.childHigh;
-              }
+          <div className="relative">
+            <div className="grid gap-5">
+              {sortedByDiff.slice(0, 3).map((cat, i) => {
+                const p = parentScores[cat] || 3;
+                const c = childScores[cat] || 3;
+                const diff = p - c;
+                const absDiff = Math.abs(diff);
+                const insight = categoryInsights[cat];
+                let actions: string[] = [];
+                
+                if (absDiff === 0) {
+                  actions = insight.actions.match;
+                } else if (diff > 0) {
+                  actions = insight.actions.parentHigh;
+                } else {
+                  actions = insight.actions.childHigh;
+                }
 
-              // Take only 2 actions per category
-              actions = actions.slice(0, 2);
+                actions = actions.slice(0, 2);
 
-              const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
-              const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
+                const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
+                const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
 
-              return (
-                <motion.div
-                  key={cat}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + i * 0.08 }}
-                  className="bg-card rounded-2xl p-5"
-                  style={{ boxShadow: "var(--shadow-card)" }}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-xl">{categoryEmojis[cat]}</span>
-                    <span className="font-display font-bold text-card-foreground flex-1">
-                      {categoryLabels[cat]}
-                    </span>
-                    <span
-                      className="text-xs font-body font-semibold px-2 py-1 rounded-full"
-                      style={{ background: urgencyColor, color: "white" }}
-                    >
-                      {urgency}
-                    </span>
-                  </div>
+                return (
+                  <motion.div
+                    key={cat}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.8 + i * 0.08 }}
+                    className="bg-card rounded-2xl p-5"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-xl">{categoryEmojis[cat]}</span>
+                      <span className="font-display font-bold text-card-foreground flex-1">
+                        {categoryLabels[cat]}
+                      </span>
+                      <span
+                        className="text-xs font-body font-semibold px-2 py-1 rounded-full"
+                        style={{ background: urgencyColor, color: "white" }}
+                      >
+                        {urgency}
+                      </span>
+                    </div>
 
-                  <ul className="space-y-2">
-                    {actions.map((action, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
-                        <span className="text-primary mt-0.5 shrink-0">✦</span>
-                        <span>{action}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              );
-            })}
+                    <ul className="space-y-2">
+                      {actions.map((action, j) => (
+                        <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
+                          <span className="text-primary mt-0.5 shrink-0">✦</span>
+                          <span>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Blur overlay after first card */}
+            <div
+              className="absolute inset-x-0 bottom-0 pointer-events-none"
+              style={{
+                top: "30%",
+                background: "linear-gradient(to bottom, transparent 0%, hsl(var(--background) / 0.6) 30%, hsl(var(--background) / 0.95) 70%, hsl(var(--background)) 100%)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+              }}
+            />
+
+            {/* CTA over blur */}
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-4 pt-16 z-10">
+              <p className="font-display font-bold text-foreground text-sm mb-3 text-center">
+                Tüm önerileri görmek için e-posta ile alın 👇
+              </p>
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105"
+                style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-elevated)" }}
+              >
+                <Mail className="w-5 h-5" />
+                Aksiyon Planını E-posta ile Gönder
+              </button>
+            </div>
           </div>
-
-
-          {/* Email Action Plan Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1 }}
-            className="mt-6 text-center"
-          >
-            <button
-              onClick={() => setShowEmailModal(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105"
-              style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-card)" }}
-            >
-              <Mail className="w-5 h-5" />
-              Aksiyon Planını E-posta ile Gönder
-            </button>
-          </motion.div>
 
           {/* Email Modal */}
           <AnimatePresence>
