@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       throw new Error('RESEND_API_KEY is not configured');
     }
 
-    const fromEmail = Deno.env.get('SMTP_USER') || 'onboarding@resend.dev';
+    const fromEmail = 'onboarding@resend.dev';
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
