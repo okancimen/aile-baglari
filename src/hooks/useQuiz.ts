@@ -77,6 +77,17 @@ export function useQuiz() {
     if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
+  const startAgeSelect = () => {
+    setPhase("age-select");
+  };
+
+  const selectAge = (age: number) => {
+    setChildAge(age);
+    setPhase("parent-quiz");
+    setCurrentIndex(0);
+    setAnswers({});
+  };
+
   const startParentQuiz = () => {
     setPhase("parent-quiz");
     setCurrentIndex(0);
