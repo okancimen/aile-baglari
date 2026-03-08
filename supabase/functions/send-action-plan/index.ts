@@ -39,10 +39,6 @@ Deno.serve(async (req) => {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
     });
 
     await transporter.sendMail({
