@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import quizData from "@/data/quiz-data.json";
 
-type Role = "parent" | "child";
-
 interface Question {
   id: string;
   kategori: string;
   soru: string;
 }
+
+type Phase = "landing" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
 
 function pickRandomPerCategory(questions: Question[], categories: string[]): Question[] {
   const selected: Question[] = [];
@@ -22,16 +22,21 @@ function pickRandomPerCategory(questions: Question[], categories: string[]): Que
 }
 
 export function useQuiz() {
-  const [role, setRole] = useState<Role | null>(null);
+  const [phase, setPhase] = useState<Phase>("landing");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [finished, setFinished] = useState(false);
+  const [parentScores, setParentScores] = useState<Record<string, number>>({});
+  const [childScores, setChildScores] = useState<Record<string, number>>({});
 
   const questions = useMemo(() => {
-    if (!role) return [];
-    const pool = role === "parent" ? quizData.ebeveyn_testi : quizData.cocuk_testi;
-    return pickRandomPerCategory(pool as Question[], quizData.kategoriler);
-  }, [role]);
+    if (phase === "parent-quiz") {
+      return pickRandomPerCategory(quizData.ebeveyn_testi as Question[], quizData.kategoriler);
+    }
+    if (phase === "child-quiz") {
+      return pickRandomPerCategory(quizData.cocuk_testi as Question[], quizData.kategoriler);
+    }
+    return [];
+  }, [phase]);
 
   const currentQuestion = questions[currentIndex] || null;
 
@@ -39,26 +44,7 @@ export function useQuiz() {
     setAnswers((prev) => ({ ...prev, [currentIndex]: value }));
   };
 
-  const next = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((i) => i + 1);
-    } else {
-      setFinished(true);
-    }
-  };
-
-  const prev = () => {
-    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
-  };
-
-  const restart = () => {
-    setRole(null);
-    setCurrentIndex(0);
-    setAnswers({});
-    setFinished(false);
-  };
-
-  const categoryScores = useMemo(() => {
+  const getCategoryScores = () => {
     const scores: Record<string, number> = {};
     questions.forEach((q, i) => {
       if (answers[i] !== undefined) {
@@ -66,11 +52,52 @@ export function useQuiz() {
       }
     });
     return scores;
-  }, [answers, questions]);
+  };
+
+  const next = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      // Finished current quiz
+      const scores = getCategoryScores();
+      if (phase === "parent-quiz") {
+        setParentScores(scores);
+        setPhase("parent-done");
+      } else if (phase === "child-quiz") {
+        setChildScores(scores);
+        setPhase("results");
+      }
+      setCurrentIndex(0);
+      setAnswers({});
+    }
+  };
+
+  const prev = () => {
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+  };
+
+  const startParentQuiz = () => {
+    setPhase("parent-quiz");
+    setCurrentIndex(0);
+    setAnswers({});
+  };
+
+  const startChildQuiz = () => {
+    setPhase("child-quiz");
+    setCurrentIndex(0);
+    setAnswers({});
+  };
+
+  const restart = () => {
+    setPhase("landing");
+    setCurrentIndex(0);
+    setAnswers({});
+    setParentScores({});
+    setChildScores({});
+  };
 
   return {
-    role,
-    setRole,
+    phase,
     currentIndex,
     currentQuestion,
     questions,
@@ -78,8 +105,10 @@ export function useQuiz() {
     selectAnswer,
     next,
     prev,
+    startParentQuiz,
+    startChildQuiz,
     restart,
-    finished,
-    categoryScores,
+    parentScores,
+    childScores,
   };
 }
