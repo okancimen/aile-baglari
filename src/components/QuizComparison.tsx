@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
@@ -268,6 +269,9 @@ const categoryInsights: Record<string, CategoryData> = {
 
 const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparisonProps) => {
   const categories = Object.keys(categoryLabels);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
 
   const totalDiff = categories.reduce((sum, cat) => {
     const p = parentScores[cat] || 3;
@@ -494,31 +498,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
             className="mt-6 text-center"
           >
             <button
-              onClick={() => {
-                const top3 = sortedByDiff.slice(0, 3);
-                let body = `Ebeveyn-Çocuk Uyum Analizi\nUyum Puanı: %${compatibilityScore} - ${compat.text}\n\n`;
-                body += `EBEVEYN AKSİYON PLANI\n${"=".repeat(30)}\n\n`;
-                top3.forEach((cat, i) => {
-                  const p = parentScores[cat] || 3;
-                  const c = childScores[cat] || 3;
-                  const diff = p - c;
-                  const absDiff = Math.abs(diff);
-                  const insight = categoryInsights[cat];
-                  let actions: string[] = [];
-                  if (absDiff === 0) actions = insight.actions.match;
-                  else if (diff > 0) actions = insight.actions.parentHigh;
-                  else actions = insight.actions.childHigh;
-                  actions = actions.slice(0, 2);
-                  const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
-                  body += `${i + 1}. ${categoryEmojis[cat]} ${categoryLabels[cat]} [${urgency}]\n`;
-                  body += `   Ebeveyn: ${p}/5 | Çocuk: ${c}/5\n`;
-                  actions.forEach((a) => { body += `   ✦ ${a}\n`; });
-                  body += `\n`;
-                });
-                body += `Her çocuk benzersizdir. Küçük adımlarla büyük değişimler yaratabilirsiniz!`;
-                const subject = `Ebeveyn Aksiyon Planı - Uyum Puanı %${compatibilityScore}`;
-                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-              }}
+              onClick={() => setShowEmailModal(true)}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105"
               style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-card)" }}
             >
@@ -526,6 +506,133 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
               Aksiyon Planını E-posta ile Gönder
             </button>
           </motion.div>
+
+          {/* Email Modal */}
+          <AnimatePresence>
+            {showEmailModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center px-4"
+                style={{ background: "rgba(0,0,0,0.5)" }}
+                onClick={() => !sending && setShowEmailModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-card rounded-2xl p-6 w-full max-w-md"
+                  style={{ boxShadow: "var(--shadow-elevated)" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-bold text-lg text-card-foreground">
+                      Aksiyon Planını Gönder
+                    </h3>
+                    <button onClick={() => !sending && setShowEmailModal(false)} className="text-muted-foreground hover:text-foreground">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-muted-foreground font-body mb-4">
+                    Aksiyon planınız girdiğiniz e-posta adresine gönderilecektir.
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="E-posta adresiniz"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground font-body mb-4 outline-none focus:ring-2 focus:ring-primary"
+                    disabled={sending}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!email || !email.includes('@')) {
+                        toast.error('Lütfen geçerli bir e-posta adresi girin.');
+                        return;
+                      }
+                      setSending(true);
+                      try {
+                        const top3 = sortedByDiff.slice(0, 3);
+                        let htmlBody = `
+                          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <h1 style="text-align: center; color: #333;">Ebeveyn-Çocuk Uyum Analizi</h1>
+                            <div style="text-align: center; background: ${compat.color}; color: white; padding: 15px; border-radius: 12px; margin: 16px 0;">
+                              <span style="font-size: 28px; font-weight: bold;">%${compatibilityScore}</span>
+                              <br/>${compat.text}
+                            </div>
+                            <h2 style="color: #333;">Ebeveyn Aksiyon Planı</h2>`;
+
+                        top3.forEach((cat, i) => {
+                          const p = parentScores[cat] || 3;
+                          const c = childScores[cat] || 3;
+                          const diff = p - c;
+                          const absDiff = Math.abs(diff);
+                          const insight = categoryInsights[cat];
+                          let actions: string[] = [];
+                          if (absDiff === 0) actions = insight.actions.match;
+                          else if (diff > 0) actions = insight.actions.parentHigh;
+                          else actions = insight.actions.childHigh;
+                          actions = actions.slice(0, 2);
+                          const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
+                          const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
+
+                          htmlBody += `
+                            <div style="background: #f9f9f9; border-radius: 12px; padding: 16px; margin: 12px 0;">
+                              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 20px;">${categoryEmojis[cat]}</span>
+                                <strong>${categoryLabels[cat]}</strong>
+                                <span style="background: ${urgencyColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: auto;">${urgency}</span>
+                              </div>
+                              <div style="font-size: 13px; color: #666; margin-bottom: 8px;">Ebeveyn: ${p}/5 | Çocuk: ${c}/5</div>
+                              <ul style="margin: 0; padding-left: 20px;">
+                                ${actions.map(a => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join('')}
+                              </ul>
+                            </div>`;
+                        });
+
+                        htmlBody += `
+                            <div style="text-align: center; margin-top: 24px; padding: 16px; background: #f0f7ff; border-radius: 12px;">
+                              <p style="color: #555; font-size: 14px;">Her çocuk benzersizdir. Küçük adımlarla büyük değişimler yaratabilirsiniz! 💛</p>
+                            </div>
+                            <p style="text-align: center; color: #999; font-size: 12px; margin-top: 16px;">EduBot - Ebeveyn-Çocuk Uyum Analizi</p>
+                          </div>`;
+
+                        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/send-action-plan`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            to: email,
+                            subject: `Ebeveyn Aksiyon Planı - Uyum Puanı %${compatibilityScore}`,
+                            htmlBody,
+                          }),
+                        });
+
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Gönderim başarısız');
+
+                        toast.success('Aksiyon planı e-posta adresinize gönderildi!');
+                        setShowEmailModal(false);
+                        setEmail('');
+                      } catch (err: any) {
+                        console.error('Email send error:', err);
+                        toast.error('E-posta gönderilemedi: ' + (err.message || 'Bilinmeyen hata'));
+                      } finally {
+                        setSending(false);
+                      }
+                    }}
+                    disabled={sending}
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
+                    style={{ background: "var(--gradient-cool)" }}
+                  >
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                    {sending ? 'Gönderiliyor...' : 'Gönder'}
+                  </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Closing note */}
