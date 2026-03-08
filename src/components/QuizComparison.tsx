@@ -383,86 +383,23 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
           </ResponsiveContainer>
         </div>
 
-        {/* Category comparisons */}
-        <div className="grid gap-4">
-          {categories.map((cat, i) => {
-            const p = parentScores[cat] || 3;
-            const c = childScores[cat] || 3;
-            const diff = p - c;
-            const absDiff = Math.abs(diff);
-            const insight = categoryInsights[cat];
-            let insightText = insight?.match || "";
-            if (absDiff >= 1) {
-              insightText = diff > 0 ? (insight?.parentHigh || "") : (insight?.childHigh || "");
-            }
-
-            return (
-              <motion.div
-                key={cat}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="bg-card rounded-2xl p-5"
-                style={{ boxShadow: "var(--shadow-card)" }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">{categoryEmojis[cat]}</span>
-                  <span className="font-display font-bold text-card-foreground flex-1">
-                    {categoryLabels[cat]}
-                  </span>
-                  {absDiff === 0 ? (
-                    <Minus className="w-5 h-5 text-muted-foreground" />
-                  ) : diff > 0 ? (
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5 text-secondary" />
-                  )}
-                </div>
-
-                {/* Parent bar */}
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-muted-foreground font-body w-16">Ebeveyn</span>
-                  <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ background: "var(--gradient-warm)" }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(p / 5) * 100}%` }}
-                      transition={{ duration: 0.5, delay: i * 0.06 }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold font-display w-6 text-right text-card-foreground">{p}</span>
-                </div>
-
-                {/* Child bar */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-muted-foreground font-body w-16">Çocuk</span>
-                  <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ background: "var(--gradient-cool)" }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(c / 5) * 100}%` }}
-                      transition={{ duration: 0.5, delay: i * 0.06 + 0.1 }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold font-display w-6 text-right text-card-foreground">{c}</span>
-                </div>
-
-                {/* Insight */}
-                <div
-                  className="text-xs font-body px-3 py-2 rounded-lg"
-                  style={{
-                    background: absDiff >= 2 ? "hsl(25, 95%, 55%, 0.1)" : absDiff === 1 ? "hsl(45, 90%, 50%, 0.1)" : "hsl(150, 60%, 40%, 0.1)",
-                    color: absDiff >= 2 ? "hsl(25, 70%, 40%)" : absDiff === 1 ? "hsl(45, 70%, 35%)" : "hsl(150, 50%, 30%)",
-                  }}
-                >
-                  {insightText}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* Email CTA - Detaylı sonuçlar için */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-card rounded-2xl p-5 mb-8 text-center border-2 border-dashed border-primary/30"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <Mail className="w-8 h-8 mx-auto mb-2 text-primary" />
+          <p className="font-display font-bold text-card-foreground mb-1">
+            Detaylı Sonuçlarınızı Görmek İster Misiniz?
+          </p>
+          <p className="text-sm text-muted-foreground font-body leading-relaxed">
+            Tüm kategorilerdeki puanlarınız, karşılaştırmalar ve size özel tüm öneriler e-posta adresinize gönderilsin.
+            Aşağıdaki aksiyon planı bir özettir; detayları e-posta ile alabilirsiniz.
+          </p>
+        </motion.div>
 
         {/* ACTION PLAN SECTION */}
         <motion.div
