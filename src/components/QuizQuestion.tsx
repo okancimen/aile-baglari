@@ -89,6 +89,11 @@ const QuizQuestion = ({
             className="bg-card rounded-3xl p-8 md:p-10"
             style={{ boxShadow: "var(--shadow-elevated)" }}
           >
+            {characterSlot && (
+              <div className="flex justify-center">
+                {characterSlot}
+              </div>
+            )}
             <p className="font-display font-bold text-xl md:text-2xl text-card-foreground mb-8 leading-relaxed">
               {question}
             </p>
