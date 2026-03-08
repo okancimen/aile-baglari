@@ -53,6 +53,12 @@ const QuizQuestion = ({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8" style={{ background: "var(--gradient-hero)" }}>
       <div className="w-full max-w-xl mx-auto">
+        {/* Role label */}
+        <div className="text-center mb-4">
+          <span className="inline-block px-4 py-1 rounded-full text-sm font-display font-bold text-primary-foreground" style={{ background: "var(--gradient-warm)" }}>
+            {roleLabel}
+          </span>
+        </div>
         {/* Progress bar */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2 font-body">
