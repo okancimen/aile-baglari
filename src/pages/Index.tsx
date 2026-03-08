@@ -1,13 +1,47 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import QuizLanding from "@/components/QuizLanding";
+import QuizQuestion from "@/components/QuizQuestion";
+import QuizResults from "@/components/QuizResults";
+import { useQuiz } from "@/hooks/useQuiz";
 
 const Index = () => {
+  const {
+    role,
+    setRole,
+    currentIndex,
+    currentQuestion,
+    questions,
+    answers,
+    selectAnswer,
+    next,
+    prev,
+    restart,
+    finished,
+    categoryScores,
+  } = useQuiz();
+
+  if (!role) {
+    return <QuizLanding onStart={(r) => setRole(r)} />;
+  }
+
+  if (finished) {
+    return <QuizResults answers={categoryScores} role={role} onRestart={restart} />;
+  }
+
+  if (!currentQuestion) return null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <QuizQuestion
+      question={currentQuestion.soru}
+      questionIndex={currentIndex}
+      totalQuestions={questions.length}
+      category={currentQuestion.kategori}
+      selectedValue={answers[currentIndex] ?? null}
+      onSelect={selectAnswer}
+      onNext={next}
+      onPrev={prev}
+      isFirst={currentIndex === 0}
+      isLast={currentIndex === questions.length - 1}
+    />
   );
 };
 
