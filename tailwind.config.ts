@@ -12,6 +12,10 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      display: ['Nunito', 'sans-serif'],
+      body: ['Quicksand', 'sans-serif'],
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
