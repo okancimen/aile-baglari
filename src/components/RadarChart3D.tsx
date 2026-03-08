@@ -56,7 +56,7 @@ const RadarChart3D = ({ data, maxValue = 5 }: RadarChart3DProps) => {
 
   // Label positions (pushed outward)
   const labelPositions = data.map((d, i) => {
-    const pt = getPoint(i, maxValue + 0.7);
+    const pt = getPoint(i, maxValue + 1.0);
     return { ...pt, label: d.label };
   });
 
