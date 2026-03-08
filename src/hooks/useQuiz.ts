@@ -27,6 +27,7 @@ export function useQuiz() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
   const [childScores, setChildScores] = useState<Record<string, number>>({});
+  const [childAge, setChildAge] = useState<number>(8);
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
