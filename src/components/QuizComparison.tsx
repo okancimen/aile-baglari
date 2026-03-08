@@ -484,6 +484,48 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
               );
             })}
           </div>
+
+
+          {/* Email Action Plan Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1 }}
+            className="mt-6 text-center"
+          >
+            <button
+              onClick={() => {
+                const top3 = sortedByDiff.slice(0, 3);
+                let body = `Ebeveyn-Çocuk Uyum Analizi\nUyum Puanı: %${compatibilityScore} - ${compat.text}\n\n`;
+                body += `EBEVEYN AKSİYON PLANI\n${"=".repeat(30)}\n\n`;
+                top3.forEach((cat, i) => {
+                  const p = parentScores[cat] || 3;
+                  const c = childScores[cat] || 3;
+                  const diff = p - c;
+                  const absDiff = Math.abs(diff);
+                  const insight = categoryInsights[cat];
+                  let actions: string[] = [];
+                  if (absDiff === 0) actions = insight.actions.match;
+                  else if (diff > 0) actions = insight.actions.parentHigh;
+                  else actions = insight.actions.childHigh;
+                  actions = actions.slice(0, 2);
+                  const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
+                  body += `${i + 1}. ${categoryEmojis[cat]} ${categoryLabels[cat]} [${urgency}]\n`;
+                  body += `   Ebeveyn: ${p}/5 | Çocuk: ${c}/5\n`;
+                  actions.forEach((a) => { body += `   ✦ ${a}\n`; });
+                  body += `\n`;
+                });
+                body += `Her çocuk benzersizdir. Küçük adımlarla büyük değişimler yaratabilirsiniz!`;
+                const subject = `Ebeveyn Aksiyon Planı - Uyum Puanı %${compatibilityScore}`;
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105"
+              style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-card)" }}
+            >
+              <Mail className="w-5 h-5" />
+              Aksiyon Planını E-posta ile Gönder
+            </button>
+          </motion.div>
         </motion.div>
 
         {/* Closing note */}
