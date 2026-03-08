@@ -1,4 +1,4 @@
-import { SmtpClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +7,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -25,24 +25,33 @@ Deno.serve(async (req) => {
     const smtpUser = Deno.env.get('SMTP_USER')!;
     const smtpPass = Deno.env.get('SMTP_PASS')!;
 
-    const client = new SmtpClient();
-
-    await client.connectTLS({
-      hostname: smtpHost,
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
       port: smtpPort,
-      username: smtpUser,
-      password: smtpPass,
+      secure: false,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
-    await client.send({
-      from: smtpUser,
+    await transporter.sendMail({
+      from: `"EduBot" <${smtpUser}>`,
       to: to,
       subject: subject,
-      content: "Lütfen HTML destekleyen bir e-posta istemcisi kullanın.",
+      text: "Lütfen HTML destekleyen bir e-posta istemcisi kullanın.",
       html: htmlBody,
     });
-
-    await client.close();
 
     return new Response(
       JSON.stringify({ success: true }),
