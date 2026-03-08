@@ -427,7 +427,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
           </p>
 
           <div className="grid gap-5">
-            {sortedByDiff.map((cat, i) => {
+            {sortedByDiff.slice(0, 3).map((cat, i) => {
               const p = parentScores[cat] || 3;
               const c = childScores[cat] || 3;
               const diff = p - c;
@@ -442,6 +442,9 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
               } else {
                 actions = insight.actions.childHigh;
               }
+
+              // Take only 2 actions per category
+              actions = actions.slice(0, 2);
 
               const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
               const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
