@@ -550,9 +550,47 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                               <span style="font-size: 28px; font-weight: bold;">%${compatibilityScore}</span>
                               <br/>${compat.text}
                             </div>
-                            <h2 style="color: #333;">Ebeveyn Aksiyon Planı</h2>`;
 
-                        top3.forEach((cat, i) => {
+                            <h2 style="color: #333;">Tüm Kategoriler - Detaylı Karşılaştırma</h2>`;
+
+                        // All categories with scores and insights
+                        categories.forEach((cat) => {
+                          const p = parentScores[cat] || 3;
+                          const c = childScores[cat] || 3;
+                          const diff = p - c;
+                          const absDiff = Math.abs(diff);
+                          const insight = categoryInsights[cat];
+                          let insightText = insight?.match || "";
+                          if (absDiff >= 1) {
+                            insightText = diff > 0 ? (insight?.parentHigh || "") : (insight?.childHigh || "");
+                          }
+                          let actions: string[] = [];
+                          if (absDiff === 0) actions = insight.actions.match;
+                          else if (diff > 0) actions = insight.actions.parentHigh;
+                          else actions = insight.actions.childHigh;
+
+                          const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
+                          const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
+
+                          htmlBody += `
+                            <div style="background: #f9f9f9; border-radius: 12px; padding: 16px; margin: 12px 0;">
+                              <div style="margin-bottom: 8px;">
+                                <span style="font-size: 20px;">${categoryEmojis[cat]}</span>
+                                <strong>${categoryLabels[cat]}</strong>
+                                <span style="background: ${urgencyColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">${urgency}</span>
+                              </div>
+                              <div style="font-size: 13px; color: #666; margin-bottom: 6px;">Ebeveyn: ${p}/5 | Çocuk: ${c}/5</div>
+                              <div style="font-size: 13px; color: #555; font-style: italic; margin-bottom: 8px;">${insightText}</div>
+                              <div style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px;">Öneriler:</div>
+                              <ul style="margin: 0; padding-left: 20px;">
+                                ${actions.map(a => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join('')}
+                              </ul>
+                            </div>`;
+                        });
+
+                        // Highlighted action plan for top 3
+                        htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Öncelikli Aksiyon Planı (İlk 3 Alan)</h2>`;
+                        top3.forEach((cat) => {
                           const p = parentScores[cat] || 3;
                           const c = childScores[cat] || 3;
                           const diff = p - c;
@@ -563,22 +601,29 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                           else if (diff > 0) actions = insight.actions.parentHigh;
                           else actions = insight.actions.childHigh;
                           actions = actions.slice(0, 2);
-                          const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
                           const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
 
                           htmlBody += `
-                            <div style="background: #f9f9f9; border-radius: 12px; padding: 16px; margin: 12px 0;">
-                              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span style="font-size: 20px;">${categoryEmojis[cat]}</span>
-                                <strong>${categoryLabels[cat]}</strong>
-                                <span style="background: ${urgencyColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: auto;">${urgency}</span>
-                              </div>
-                              <div style="font-size: 13px; color: #666; margin-bottom: 8px;">Ebeveyn: ${p}/5 | Çocuk: ${c}/5</div>
-                              <ul style="margin: 0; padding-left: 20px;">
+                            <div style="background: #fff3e0; border-left: 4px solid ${urgencyColor}; border-radius: 8px; padding: 14px; margin: 10px 0;">
+                              <strong>${categoryEmojis[cat]} ${categoryLabels[cat]}</strong>
+                              <ul style="margin: 8px 0 0; padding-left: 20px;">
                                 ${actions.map(a => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join('')}
                               </ul>
                             </div>`;
                         });
+
+                        // Retake test paragraph
+                        htmlBody += `
+                            <div style="background: #e8f5e9; border-radius: 12px; padding: 16px; margin: 24px 0;">
+                              <h3 style="color: #2e7d32; margin-top: 0;">🔄 Düzenli Takip Önemlidir!</h3>
+                              <p style="color: #444; font-size: 14px; line-height: 1.6; margin: 0;">
+                                Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişim gösterir. Aksiyon planınızı uyguladıkça,
+                                hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşacaktır. Bu nedenle, <strong>her 2-3 ayda bir
+                                bu testi tekrar yapmanızı</strong> öneriyoruz. Düzenli olarak testi tekrarlayarak gelişimi somut olarak
+                                gözlemleyebilir, hangi alanlarda ilerleme kaydettiğinizi görebilir ve yeni odak noktaları belirleyebilirsiniz.
+                                Unutmayın, tutarlı ve sabırlı bir yaklaşım en büyük değişimi yaratır!
+                              </p>
+                            </div>`;
 
                         htmlBody += `
                             <div style="text-align: center; margin-top: 24px; padding: 16px; background: #f0f7ff; border-radius: 12px;">
