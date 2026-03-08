@@ -11,6 +11,7 @@ interface QuizQuestionProps {
   onPrev: () => void;
   isFirst: boolean;
   isLast: boolean;
+  roleLabel: string;
 }
 
 const categoryLabels: Record<string, string> = {
