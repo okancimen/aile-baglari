@@ -333,10 +333,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
         </div>
 
         {/* Spider/Radar Chart */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+        <div
           className="bg-card rounded-2xl p-4 md:p-6 mb-8"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
@@ -384,7 +381,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
               />
             </RadarChart>
           </ResponsiveContainer>
-        </motion.div>
+        </div>
 
         {/* Category comparisons */}
         <div className="grid gap-4">
