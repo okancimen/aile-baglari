@@ -7,7 +7,7 @@ interface Question {
   soru: string;
 }
 
-type Phase = "landing" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
+type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
 
 function pickRandomPerCategory(questions: Question[], categories: string[]): Question[] {
   const selected: Question[] = [];
@@ -27,6 +27,7 @@ export function useQuiz() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
   const [childScores, setChildScores] = useState<Record<string, number>>({});
+  const [childAge, setChildAge] = useState<number>(8);
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
@@ -76,6 +77,17 @@ export function useQuiz() {
     if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
+  const startAgeSelect = () => {
+    setPhase("age-select");
+  };
+
+  const selectAge = (age: number) => {
+    setChildAge(age);
+    setPhase("parent-quiz");
+    setCurrentIndex(0);
+    setAnswers({});
+  };
+
   const startParentQuiz = () => {
     setPhase("parent-quiz");
     setCurrentIndex(0);
@@ -94,6 +106,7 @@ export function useQuiz() {
     setAnswers({});
     setParentScores({});
     setChildScores({});
+    setChildAge(8);
   };
 
   return {
@@ -105,10 +118,13 @@ export function useQuiz() {
     selectAnswer,
     next,
     prev,
+    startAgeSelect,
+    selectAge,
     startParentQuiz,
     startChildQuiz,
     restart,
     parentScores,
     childScores,
+    childAge,
   };
 }

@@ -12,6 +12,7 @@ interface QuizQuestionProps {
   isFirst: boolean;
   isLast: boolean;
   roleLabel: string;
+  characterSlot?: React.ReactNode;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -47,6 +48,7 @@ const QuizQuestion = ({
   isFirst,
   isLast,
   roleLabel,
+  characterSlot,
 }: QuizQuestionProps) => {
   const progress = ((questionIndex + 1) / totalQuestions) * 100;
 
@@ -87,6 +89,11 @@ const QuizQuestion = ({
             className="bg-card rounded-3xl p-8 md:p-10"
             style={{ boxShadow: "var(--shadow-elevated)" }}
           >
+            {characterSlot && (
+              <div className="flex justify-center">
+                {characterSlot}
+              </div>
+            )}
             <p className="font-display font-bold text-xl md:text-2xl text-card-foreground mb-8 leading-relaxed">
               {question}
             </p>
