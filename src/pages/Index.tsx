@@ -1,18 +1,27 @@
+import { useSearchParams } from "react-router-dom";
 import QuizLanding from "@/components/QuizLanding";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
 import ParentDone from "@/components/ParentDone";
+import ContinueQuiz from "@/pages/ContinueQuiz";
 import { useQuiz } from "@/hooks/useQuiz";
 
 const Index = () => {
+  const [searchParams] = useSearchParams();
+  const continueKey = searchParams.get("continue");
   const quiz = useQuiz();
+
+  // If there's a continue key, show the continue flow
+  if (continueKey) {
+    return <ContinueQuiz />;
+  }
 
   if (quiz.phase === "landing") {
     return <QuizLanding onStart={quiz.startParentQuiz} />;
   }
 
   if (quiz.phase === "parent-done") {
-    return <ParentDone onStartChildQuiz={quiz.startChildQuiz} />;
+    return <ParentDone onStartChildQuiz={quiz.startChildQuiz} parentScores={quiz.parentScores} />;
   }
 
   if (quiz.phase === "results") {

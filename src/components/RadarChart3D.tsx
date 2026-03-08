@@ -56,7 +56,7 @@ const RadarChart3D = ({ data, maxValue = 5 }: RadarChart3DProps) => {
 
   // Label positions (pushed outward)
   const labelPositions = data.map((d, i) => {
-    const pt = getPoint(i, maxValue + 0.7);
+    const pt = getPoint(i, maxValue + 1.0);
     return { ...pt, label: d.label };
   });
 
@@ -234,11 +234,21 @@ const RadarChart3D = ({ data, maxValue = 5 }: RadarChart3DProps) => {
           );
         })}
 
-        {/* Labels */}
+        {/* Labels - multi-line support for full names */}
         {labelPositions.map((pos, i) => {
           const isLeft = pos.x < cx - 20;
           const isRight = pos.x > cx + 20;
           const anchor = isLeft ? "end" : isRight ? "start" : "middle";
+          const label = data[i].label;
+          const words = label.split(" ");
+          // Split into max 2 lines
+          let lines: string[];
+          if (words.length <= 1 || label.length <= 12) {
+            lines = [label];
+          } else {
+            const mid = Math.ceil(words.length / 2);
+            lines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+          }
 
           return (
             <motion.text
@@ -248,12 +258,16 @@ const RadarChart3D = ({ data, maxValue = 5 }: RadarChart3DProps) => {
               textAnchor={anchor}
               dominantBaseline="central"
               className="fill-muted-foreground"
-              style={{ fontSize: 10.5, fontFamily: "var(--font-body)", fontWeight: 600 }}
+              style={{ fontSize: 9.5, fontFamily: "var(--font-body)", fontWeight: 600 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 + i * 0.05 }}
             >
-              {data[i].label.length > 10 ? data[i].label.slice(0, 9) + "…" : data[i].label}
+              {lines.map((line, li) => (
+                <tspan key={li} x={pos.x} dy={li === 0 ? 0 : 12}>
+                  {line}
+                </tspan>
+              ))}
             </motion.text>
           );
         })}

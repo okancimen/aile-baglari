@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_sessions: {
+        Row: {
+          child_scores: Json | null
+          completed: boolean
+          created_at: string
+          email: string | null
+          id: string
+          parent_scores: Json
+          session_key: string
+        }
+        Insert: {
+          child_scores?: Json | null
+          completed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          parent_scores?: Json
+          session_key?: string
+        }
+        Update: {
+          child_scores?: Json | null
+          completed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          parent_scores?: Json
+          session_key?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
