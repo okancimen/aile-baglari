@@ -46,6 +46,7 @@ const QuizQuestion = ({
   onPrev,
   isFirst,
   isLast,
+  roleLabel,
 }: QuizQuestionProps) => {
   const progress = ((questionIndex + 1) / totalQuestions) * 100;
 
