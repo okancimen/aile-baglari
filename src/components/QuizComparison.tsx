@@ -446,8 +446,8 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
             <div
               className="absolute inset-x-0 bottom-0 pointer-events-none"
               style={{
-                top: "30%",
-                background: "linear-gradient(to bottom, transparent 0%, hsl(var(--background) / 0.6) 30%, hsl(var(--background) / 0.95) 70%, hsl(var(--background)) 100%)",
+                top: "18%",
+                background: "linear-gradient(to bottom, transparent 0%, hsl(var(--background) / 0.7) 25%, hsl(var(--background) / 0.95) 55%, hsl(var(--background)) 80%)",
                 backdropFilter: "blur(6px)",
                 WebkitBackdropFilter: "blur(6px)",
               }}
