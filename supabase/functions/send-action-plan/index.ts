@@ -1,5 +1,3 @@
-import nodemailer from "npm:nodemailer@6.9.16";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -20,41 +18,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    const smtpHost = Deno.env.get('SMTP_HOST')!;
-    const smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '465');
-    const smtpUser = Deno.env.get('SMTP_USER')!;
-    const smtpPass = Deno.env.get('SMTP_PASS')!;
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: false,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
+    const fromEmail = Deno.env.get('SMTP_USER') || 'onboarding@resend.dev';
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
       },
-      tls: {
-        rejectUnauthorized: false,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      body: JSON.stringify({
+        from: `EduBot <${fromEmail}>`,
+        to: [to],
+        subject: subject,
+        html: htmlBody,
+      }),
     });
 
-    await transporter.sendMail({
-      from: `"EduBot" <${smtpUser}>`,
-      to: to,
-      subject: subject,
-      text: "Lütfen HTML destekleyen bir e-posta istemcisi kullanın.",
-      html: htmlBody,
-    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('Resend API error:', data);
+      throw new Error(data.message || `Resend API error [${res.status}]`);
+    }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, id: data.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('SMTP Error:', error);
+    console.error('Email Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
