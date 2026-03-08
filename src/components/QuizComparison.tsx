@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen } from "lucide-react";
+import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail } from "lucide-react";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
