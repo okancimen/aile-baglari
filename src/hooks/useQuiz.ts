@@ -118,10 +118,13 @@ export function useQuiz() {
     selectAnswer,
     next,
     prev,
+    startAgeSelect,
+    selectAge,
     startParentQuiz,
     startChildQuiz,
     restart,
     parentScores,
     childScores,
+    childAge,
   };
 }

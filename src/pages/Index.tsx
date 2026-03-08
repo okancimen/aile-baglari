@@ -4,6 +4,8 @@ import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
 import ParentDone from "@/components/ParentDone";
 import ContinueQuiz from "@/pages/ContinueQuiz";
+import AgeSelect from "@/components/AgeSelect";
+import ChildQuizCharacter from "@/components/ChildQuizCharacter";
 import { useQuiz } from "@/hooks/useQuiz";
 
 const Index = () => {
@@ -11,13 +13,16 @@ const Index = () => {
   const continueKey = searchParams.get("continue");
   const quiz = useQuiz();
 
-  // If there's a continue key, show the continue flow
   if (continueKey) {
     return <ContinueQuiz />;
   }
 
   if (quiz.phase === "landing") {
-    return <QuizLanding onStart={quiz.startParentQuiz} />;
+    return <QuizLanding onStart={quiz.startAgeSelect} />;
+  }
+
+  if (quiz.phase === "age-select") {
+    return <AgeSelect onSelect={quiz.selectAge} />;
   }
 
   if (quiz.phase === "parent-done") {
@@ -36,6 +41,7 @@ const Index = () => {
 
   if ((quiz.phase === "parent-quiz" || quiz.phase === "child-quiz") && quiz.currentQuestion) {
     const isParent = quiz.phase === "parent-quiz";
+    const isChild = quiz.phase === "child-quiz";
     return (
       <QuizQuestion
         question={quiz.currentQuestion.soru}
@@ -49,6 +55,15 @@ const Index = () => {
         isFirst={quiz.currentIndex === 0}
         isLast={quiz.currentIndex === quiz.questions.length - 1}
         roleLabel={isParent ? "Ebeveyn Testi" : "Çocuk Testi"}
+        characterSlot={
+          isChild ? (
+            <ChildQuizCharacter
+              age={quiz.childAge}
+              category={quiz.currentQuestion.kategori}
+              questionIndex={quiz.currentIndex}
+            />
+          ) : undefined
+        }
       />
     );
   }
