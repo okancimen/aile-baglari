@@ -6,10 +6,10 @@ interface AgeSelectProps {
 }
 
 const ageGroups = [
-  { range: "4-6", label: "4–6 yaş", emoji: "🐰", value: 5 },
+  { range: "3-6", label: "3–6 yaş", emoji: "🐰", value: 5 },
   { range: "7-9", label: "7–9 yaş", emoji: "🦸", value: 8 },
-  { range: "10-12", label: "10–12 yaş", emoji: "🚀", value: 11 },
-  { range: "13+", label: "13+ yaş", emoji: "🎯", value: 14 },
+  { range: "10-13", label: "10–13 yaş", emoji: "🚀", value: 11 },
+  { range: "13-18", label: "13–18 yaş", emoji: "🎯", value: 15 },
 ];
 
 const AgeSelect = ({ onSelect }: AgeSelectProps) => {
