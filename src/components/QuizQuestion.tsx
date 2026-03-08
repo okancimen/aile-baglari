@@ -12,6 +12,7 @@ interface QuizQuestionProps {
   isFirst: boolean;
   isLast: boolean;
   roleLabel: string;
+  characterSlot?: React.ReactNode;
 }
 
 const categoryLabels: Record<string, string> = {
