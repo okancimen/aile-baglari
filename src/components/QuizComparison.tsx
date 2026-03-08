@@ -269,6 +269,9 @@ const categoryInsights: Record<string, CategoryData> = {
 
 const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparisonProps) => {
   const categories = Object.keys(categoryLabels);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
 
   const totalDiff = categories.reduce((sum, cat) => {
     const p = parentScores[cat] || 3;
