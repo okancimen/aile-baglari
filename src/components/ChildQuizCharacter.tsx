@@ -57,7 +57,7 @@ const bounceVariants = {
   animate: {
     scale: 1,
     rotate: 0,
-    transition: { type: "spring", stiffness: 260, damping: 15 },
+    transition: { type: "spring" as const, stiffness: 260, damping: 15 },
   },
   exit: { scale: 0, rotate: 15, transition: { duration: 0.2 } },
 };
@@ -67,7 +67,7 @@ const floatAnimation = {
   transition: {
     duration: 2.5,
     repeat: Infinity,
-    ease: "easeInOut",
+    ease: "easeInOut" as const,
   },
 };
 

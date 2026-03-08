@@ -106,6 +106,7 @@ export function useQuiz() {
     setAnswers({});
     setParentScores({});
     setChildScores({});
+    setChildAge(8);
   };
 
   return {
