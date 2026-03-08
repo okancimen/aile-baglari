@@ -12,15 +12,15 @@ const QuizLanding = ({ onStart }: QuizLandingProps) => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="text-center max-w-2xl mx-auto"
-      >
+        className="text-center max-w-2xl mx-auto">
+        
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           className="w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center"
-          style={{ background: "var(--gradient-warm)" }}
-        >
+          style={{ background: "var(--gradient-warm)" }}>
+          
           <Heart className="w-12 h-12 text-primary-foreground" />
         </motion.div>
 
@@ -28,8 +28,8 @@ const QuizLanding = ({ onStart }: QuizLandingProps) => {
           Çocuğunuzu Ne Kadar{" "}
           <span className="text-primary">İyi Tanıyorsunuz?</span>
         </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-4 font-body">
-          Ücretsiz ankete katılın, farklılıklarınızı görün
+        <p className="text-lg md:text-xl text-muted-foreground mb-4 font-body">Ankete katılın, farklılıklarınızı görün
+
         </p>
         <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
           Kapsamlı Ebeveyn-Çocuk Uyum Analizi ile beklentileriniz ve çocuğunuzun
@@ -54,7 +54,7 @@ const QuizLanding = ({ onStart }: QuizLandingProps) => {
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-accent text-accent-foreground font-display font-bold text-sm">3</div>
               <div>
-                <p className="font-body text-sm text-card-foreground">🎯 Sonuçlar karşılaştırılır, farklar gösterilir</p>
+                <p className="font-body text-sm text-card-foreground">🎯 Sonuçlar karşılaştırılır, tavsiyeler gösterilir</p>
               </div>
             </div>
           </div>
@@ -65,8 +65,8 @@ const QuizLanding = ({ onStart }: QuizLandingProps) => {
           whileTap={{ scale: 0.97 }}
           onClick={onStart}
           className="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-display font-bold text-lg text-primary-foreground transition-all"
-          style={{ background: "var(--gradient-warm)", boxShadow: "var(--shadow-elevated)" }}
-        >
+          style={{ background: "var(--gradient-warm)", boxShadow: "var(--shadow-elevated)" }}>
+          
           Ankete Başla
         </motion.button>
 
@@ -74,8 +74,8 @@ const QuizLanding = ({ onStart }: QuizLandingProps) => {
           Toplam 20 soru (10 ebeveyn + 10 çocuk) • Yaklaşık 5 dakika
         </p>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default QuizLanding;
