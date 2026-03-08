@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend } from "recharts";
+import RadarChart3D from "./RadarChart3D";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
@@ -332,55 +332,18 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
           </div>
         </div>
 
-        {/* Spider/Radar Chart */}
+        {/* 3D Spider/Radar Chart */}
         <div
-          className="bg-card rounded-2xl p-4 md:p-6 mb-8"
-          style={{ boxShadow: "var(--shadow-card)" }}
+          className="bg-card rounded-2xl p-4 md:p-6 mb-8 overflow-hidden"
+          style={{ boxShadow: "var(--shadow-elevated)" }}
         >
-          <ResponsiveContainer width="100%" height={380}>
-            <RadarChart
-              data={categories.map((cat) => ({
-                category: categoryLabels[cat],
-                short: categoryLabels[cat].length > 8 ? categoryLabels[cat].slice(0, 7) + "…" : categoryLabels[cat],
-                parent: parentScores[cat] || 3,
-                child: childScores[cat] || 3,
-              }))}
-              cx="50%"
-              cy="50%"
-              outerRadius="70%"
-            >
-              <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis
-                dataKey="short"
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-              />
-              <PolarRadiusAxis
-                angle={90}
-                domain={[0, 5]}
-                tickCount={6}
-                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              />
-              <Radar
-                name="Ebeveyn"
-                dataKey="parent"
-                stroke="hsl(25, 95%, 55%)"
-                fill="hsl(25, 95%, 55%)"
-                fillOpacity={0.25}
-                strokeWidth={2}
-              />
-              <Radar
-                name="Çocuk"
-                dataKey="child"
-                stroke="hsl(210, 70%, 50%)"
-                fill="hsl(210, 70%, 50%)"
-                fillOpacity={0.25}
-                strokeWidth={2}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: 13, fontFamily: "var(--font-body)" }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
+          <RadarChart3D
+            data={categories.map((cat) => ({
+              label: categoryLabels[cat],
+              parent: parentScores[cat] || 3,
+              child: childScores[cat] || 3,
+            }))}
+          />
         </div>
 
         {/* Email CTA - Detaylı sonuçlar için */}
