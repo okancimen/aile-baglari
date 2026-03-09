@@ -112,6 +112,7 @@ export function useQuiz() {
     setChildScores({});
     setChildAge(8);
     setChildName("");
+    setChildGender("boy");
   };
 
   return {
