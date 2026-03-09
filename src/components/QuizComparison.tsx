@@ -9,6 +9,8 @@ interface QuizComparisonProps {
   parentScores: Record<string, number>;
   childScores: Record<string, number>;
   onRestart: () => void;
+  childName?: string;
+  childGender?: "girl" | "boy";
 }
 
 const categoryLabels: Record<string, string> = {
@@ -269,7 +271,9 @@ const categoryInsights: Record<string, CategoryData> = {
   }
 };
 
-const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparisonProps) => {
+const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender }: QuizComparisonProps) => {
+  const genderEmoji = childGender === "girl" ? "👧" : "👦";
+  const displayName = childName || "Çocuk";
   const categories = Object.keys(categoryLabels);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState("");
@@ -309,8 +313,9 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
           className="text-center mb-8">
           
           <h1 className="font-display text-3xl md:text-4xl font-black text-foreground mb-3">
-            Ebeveyn-Çocuk Uyum Analizi
+            {genderEmoji} {displayName} — Ebeveyn Uyum Analizi
           </h1>
+          <p className="text-muted-foreground font-body text-sm mb-3">{displayName} için kişiselleştirilmiş sonuçlar</p>
           <div className="inline-block rounded-2xl px-6 py-3 mb-2" style={{ background: compat.color }}>
             <span className="font-display font-black text-2xl" style={{ color: "white" }}>
               %{compatibilityScore}
@@ -329,7 +334,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: "var(--gradient-cool)" }} />
-            <span className="text-muted-foreground">Çocuk</span>
+            <span className="text-muted-foreground">{displayName}</span>
           </div>
         </div>
 
