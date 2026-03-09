@@ -1,7 +1,7 @@
 // 3D Radar Chart version
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2 } from "lucide-react";
+import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import RadarChart3D from "./RadarChart3D";
 
@@ -661,7 +661,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
                     style={{ background: "var(--gradient-cool)" }}
                   >
-                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <TriangleAlert className="w-5 h-5" />}
                     {sending ? 'Gönderiliyor...' : 'Gönder'}
                   </button>
                 </motion.div>
