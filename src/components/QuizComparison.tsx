@@ -9,6 +9,8 @@ interface QuizComparisonProps {
   parentScores: Record<string, number>;
   childScores: Record<string, number>;
   onRestart: () => void;
+  childName?: string;
+  childGender?: "girl" | "boy";
 }
 
 const categoryLabels: Record<string, string> = {
