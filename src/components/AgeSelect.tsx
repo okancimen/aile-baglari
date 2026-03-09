@@ -14,6 +14,7 @@ const ageGroups = [
 
 const AgeSelect = ({ onSelect }: AgeSelectProps) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const [childName, setChildName] = useState("");
 
   return (
     <div
