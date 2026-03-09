@@ -429,6 +429,16 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                       </span>
                     </div>
 
+                    {/* Açıklayıcı paragraf */}
+                    <p className="text-sm font-body text-muted-foreground mb-4 leading-relaxed">
+                      {absDiff === 0 
+                        ? insight.match
+                        : diff > 0 
+                          ? insight.parentHigh
+                          : insight.childHigh
+                      }
+                    </p>
+
                     <ul className="space-y-2">
                       {actions.map((action, j) => (
                         <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
