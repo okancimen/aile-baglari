@@ -86,8 +86,8 @@ const AgeSelect = ({ onSelect }: AgeSelectProps) => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => selected !== null && onSelect(selected)}
-          disabled={selected === null}
+          onClick={() => selected !== null && childName.trim() && onSelect(selected, childName.trim())}
+          disabled={selected === null || !childName.trim()}
           className="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-display font-bold text-lg text-primary-foreground transition-all disabled:opacity-30"
           style={{
             background: selected !== null ? "var(--gradient-warm)" : undefined,
