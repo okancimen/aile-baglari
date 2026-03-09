@@ -334,7 +334,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: "var(--gradient-cool)" }} />
-            <span className="text-muted-foreground">Çocuk</span>
+            <span className="text-muted-foreground">{displayName}</span>
           </div>
         </div>
 

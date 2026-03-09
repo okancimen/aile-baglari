@@ -56,7 +56,7 @@ const Index = () => {
         onPrev={quiz.prev}
         isFirst={quiz.currentIndex === 0}
         isLast={quiz.currentIndex === quiz.questions.length - 1}
-        roleLabel={isParent ? "Ebeveyn Testi" : "Çocuk Testi"}
+        roleLabel={isParent ? "Ebeveyn Testi" : `${quiz.childName} için Çocuk Testi`}
         characterSlot={
           isChild ? (
             <ChildQuizCharacter
