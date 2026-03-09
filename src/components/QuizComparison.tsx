@@ -575,7 +575,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                         });
 
                         // Highlighted action plan for top 3
-                        htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Öncelikli Aksiyon Planı (İlk 3 Alan)</h2>`;
+                        htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Haftanın Öncelikli Aksiyon Planı</h2>`;
                         top3.forEach((cat) => {
                           const p = parentScores[cat] || 3;
                           const c = childScores[cat] || 3;
