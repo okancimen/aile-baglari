@@ -29,6 +29,7 @@ export function useQuiz() {
   const [childScores, setChildScores] = useState<Record<string, number>>({});
   const [childAge, setChildAge] = useState<number>(8);
   const [childName, setChildName] = useState<string>("");
+  const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
@@ -82,9 +83,10 @@ export function useQuiz() {
     setPhase("age-select");
   };
 
-  const selectAge = (age: number, name: string) => {
+  const selectAge = (age: number, name: string, gender: "girl" | "boy") => {
     setChildAge(age);
     setChildName(name);
+    setChildGender(gender);
     setPhase("parent-quiz");
     setCurrentIndex(0);
     setAnswers({});
@@ -110,6 +112,7 @@ export function useQuiz() {
     setChildScores({});
     setChildAge(8);
     setChildName("");
+    setChildGender("boy");
   };
 
   return {
@@ -130,5 +133,6 @@ export function useQuiz() {
     childScores,
     childAge,
     childName,
+    childGender,
   };
 }

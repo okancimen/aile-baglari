@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 interface AgeSelectProps {
-  onSelect: (age: number, name: string) => void;
+  onSelect: (age: number, name: string, gender: "girl" | "boy") => void;
 }
 
 const ageGroups = [
@@ -15,6 +15,7 @@ const ageGroups = [
 const AgeSelect = ({ onSelect }: AgeSelectProps) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [childName, setChildName] = useState("");
+  const [gender, setGender] = useState<"girl" | "boy" | null>(null);
 
   return (
     <div
@@ -83,16 +84,40 @@ const AgeSelect = ({ onSelect }: AgeSelectProps) => {
           ))}
         </div>
 
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {([
+            { value: "girl" as const, label: "Kız", emoji: "👧" },
+            { value: "boy" as const, label: "Erkek", emoji: "👦" },
+          ]).map((g) => (
+            <motion.button
+              key={g.value}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setGender(g.value)}
+              className={`flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 ${
+                gender === g.value
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+              style={{
+                boxShadow: gender === g.value ? "var(--shadow-elevated)" : "var(--shadow-card)",
+              }}
+            >
+              <span className="text-4xl">{g.emoji}</span>
+              <span className="font-display font-bold text-lg text-card-foreground">{g.label}</span>
+            </motion.button>
+          ))}
+        </div>
+
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => selected !== null && childName.trim() && onSelect(selected, childName.trim())}
-          disabled={selected === null || !childName.trim()}
+          onClick={() => selected !== null && childName.trim() && gender && onSelect(selected, childName.trim(), gender)}
+          disabled={selected === null || !childName.trim() || !gender}
           className="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-display font-bold text-lg text-primary-foreground transition-all disabled:opacity-30"
           style={{
-            background: selected !== null ? "var(--gradient-warm)" : undefined,
-            boxShadow:
-              selected !== null ? "var(--shadow-elevated)" : undefined,
+            background: selected !== null && childName.trim() && gender ? "var(--gradient-warm)" : undefined,
+            boxShadow: selected !== null && childName.trim() && gender ? "var(--shadow-elevated)" : undefined,
           }}
         >
           Devam Et →
