@@ -617,6 +617,18 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                             <div style="text-align: center; margin-top: 24px; padding: 16px; background: #f0f7ff; border-radius: 12px;">
                               <p style="color: #555; font-size: 14px;">Her çocuk benzersizdir. Küçük adımlarla büyük değişimler yaratabilirsiniz! 💛</p>
                             </div>
+                            
+                            <div style="margin-top: 24px; padding: 22px; background: linear-gradient(135deg, #fff9f0 0%, #fef5e7 100%); border-radius: 14px; border-left: 4px solid #f59e0b;">
+                              <p style="color: #78350f; font-size: 14px; line-height: 1.7; margin: 0; font-style: italic;">
+                                🌱 Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişim gösterebilir. 
+                                Aksiyon planınızı uyguladıkça, hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. 
+                                Bu nedenle, <strong>her 1–2 haftada bir bu testi tekrar yapmanızı</strong> öneriyoruz.
+                              </p>
+                              <p style="color: #d97706; font-size: 15px; font-weight: 600; text-align: center; margin: 14px 0 0 0;">
+                                Çocuğunuzla ilişkinizi sürekli geliştirebilirsiniz — bu tamamen size bağlı. ❤️
+                              </p>
+                            </div>
+
                             <p style="text-align: center; color: #999; font-size: 12px; margin-top: 16px;">EduBot - Ebeveyn-Çocuk Uyum Analizi</p>
                           </div>`;
 
