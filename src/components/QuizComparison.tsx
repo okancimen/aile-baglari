@@ -1,7 +1,7 @@
 // 3D Radar Chart version
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2 } from "lucide-react";
+import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, BookOpen, Mail, X, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import RadarChart3D from "./RadarChart3D";
 
