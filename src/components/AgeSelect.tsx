@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 interface AgeSelectProps {
-  onSelect: (age: number) => void;
+  onSelect: (age: number, name: string) => void;
 }
 
 const ageGroups = [
