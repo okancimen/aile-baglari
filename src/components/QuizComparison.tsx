@@ -525,7 +525,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                       }
                       setSending(true);
                       try {
-                        const top3 = sortedByDiff.slice(0, 3);
+                        const top3 = sortedByDiff.slice(0, 2);
                         let htmlBody = `
                           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                             <h1 style="text-align: center; color: #333;">Ebeveyn-Çocuk Uyum Analizi</h1>
