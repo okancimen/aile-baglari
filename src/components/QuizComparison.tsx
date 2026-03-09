@@ -313,8 +313,9 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
           className="text-center mb-8">
           
           <h1 className="font-display text-3xl md:text-4xl font-black text-foreground mb-3">
-            Ebeveyn-Çocuk Uyum Analizi
+            {genderEmoji} {displayName} — Ebeveyn Uyum Analizi
           </h1>
+          <p className="text-muted-foreground font-body text-sm mb-3">{displayName} için kişiselleştirilmiş sonuçlar</p>
           <div className="inline-block rounded-2xl px-6 py-3 mb-2" style={{ background: compat.color }}>
             <span className="font-display font-black text-2xl" style={{ color: "white" }}>
               %{compatibilityScore}
