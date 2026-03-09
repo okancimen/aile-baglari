@@ -439,14 +439,21 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                       }
                     </p>
 
-                    <ul className="space-y-2">
+                    <div className="space-y-2 relative">
                       {actions.map((action, j) => (
-                        <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
+                        <div 
+                          key={j} 
+                          className={`flex items-start gap-2 text-sm font-body text-card-foreground ${j > 0 ? 'blur-sm opacity-40' : ''}`}
+                        >
                           <span className="text-primary mt-0.5 shrink-0">✦</span>
                           <span>{action}</span>
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                      {/* Blur overlay after first item */}
+                      {actions.length > 1 && (
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card via-card/90 to-transparent pointer-events-none" />
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
