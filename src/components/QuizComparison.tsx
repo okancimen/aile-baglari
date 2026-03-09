@@ -386,7 +386,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
 
           <div className="relative">
             <div className="grid gap-5">
-              {sortedByDiff.slice(0, 3).map((cat, i) => {
+              {sortedByDiff.slice(0, 2).map((cat, i) => {
                 const p = parentScores[cat] || 3;
                 const c = childScores[cat] || 3;
                 const diff = p - c;
