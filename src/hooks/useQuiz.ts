@@ -82,8 +82,9 @@ export function useQuiz() {
     setPhase("age-select");
   };
 
-  const selectAge = (age: number) => {
+  const selectAge = (age: number, name: string) => {
     setChildAge(age);
+    setChildName(name);
     setPhase("parent-quiz");
     setCurrentIndex(0);
     setAnswers({});
