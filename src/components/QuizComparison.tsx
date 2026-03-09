@@ -620,9 +620,10 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                             
                             <div style="margin-top: 24px; padding: 22px; background: linear-gradient(135deg, #fff9f0 0%, #fef5e7 100%); border-radius: 14px; border-left: 4px solid #f59e0b;">
                               <p style="color: #78350f; font-size: 14px; line-height: 1.7; margin: 0; font-style: italic;">
-                                🌱 Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişim gösterebilir. 
-                                Aksiyon planınızı uyguladıkça, hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. 
-                                Bu nedenle, <strong>her 1–2 haftada bir bu testi tekrar yapmanızı</strong> öneriyoruz.
+                                🌱 Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişebilir. 
+                                Aksiyon planını uyguladıkça hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. 
+                                Bu nedenle testi <strong>her 1–2 haftada bir tekrar yapmanızı</strong> öneriyoruz.
+                                Farklı sonuçlar gördükçe yeni gelişim alanlarını da keşfetme fırsatı bulacaksınız.
                               </p>
                               <p style="color: #d97706; font-size: 15px; font-weight: 600; text-align: center; margin: 14px 0 0 0;">
                                 Çocuğunuzla ilişkinizi sürekli geliştirebilirsiniz — bu tamamen size bağlı. ❤️
