@@ -525,7 +525,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                       }
                       setSending(true);
                       try {
-                        const top3 = sortedByDiff.slice(0, 3);
+                        const top3 = sortedByDiff.slice(0, 2);
                         let htmlBody = `
                           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                             <h1 style="text-align: center; color: #333;">Ebeveyn-Çocuk Uyum Analizi</h1>
@@ -538,7 +538,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                               <h3 style="color: #2e7d32; margin-top: 0;">🔄 Düzenli Takip Önemlidir!</h3>
                               <p style="color: #444; font-size: 14px; line-height: 1.6; margin: 0;">
                                 Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişim gösterebilir. Aksiyon planınızı uyguladıkça,
-                                hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. Bu nedenle, <strong>her 2-4 haftada bir bu testi
+                                hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. Bu nedenle, <strong>her 1-2 haftada bir bu testi
                                 tekrar yapmanızı</strong> öneriyoruz. Düzenli takip, gelişimi somut olarak gözlemlemenize ve yeni odak noktaları belirlemenize
                                 yardımcı olur.
                               </p>
@@ -575,7 +575,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                         });
 
                         // Highlighted action plan for top 3
-                        htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Öncelikli Aksiyon Planı (İlk 3 Alan)</h2>`;
+                        htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Haftanın Öncelikli Aksiyon Planı</h2>`;
                         top3.forEach((cat) => {
                           const p = parentScores[cat] || 3;
                           const c = childScores[cat] || 3;
