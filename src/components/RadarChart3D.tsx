@@ -64,7 +64,7 @@ const RadarChart3D = ({ data, maxValue = 5 }: RadarChart3DProps) => {
     <div className="relative w-full flex items-center justify-center">
       {/* Glow background */}
       <div
-        className="absolute rounded-full blur-3xl opacity-20"
+        className="absolute rounded-full blur-2xl opacity-14"
         style={{
           width: radius * 2.2,
           height: radius * 2.2 * tiltX,
