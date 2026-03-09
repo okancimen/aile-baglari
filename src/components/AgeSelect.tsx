@@ -43,6 +43,16 @@ const AgeSelect = ({ onSelect }: AgeSelectProps) => {
           Yaşa uygun deneyim için çocuğunuzun yaş grubunu seçin
         </p>
 
+        <div className="mb-6">
+          <input
+            type="text"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            placeholder="Çocuğunuzun adı"
+            className="w-full px-5 py-3 rounded-2xl border-2 border-border bg-card text-card-foreground font-body text-lg text-center focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4 mb-8">
           {ageGroups.map((group, i) => (
             <motion.button
