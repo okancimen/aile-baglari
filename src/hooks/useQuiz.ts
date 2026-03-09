@@ -129,5 +129,6 @@ export function useQuiz() {
     parentScores,
     childScores,
     childAge,
+    childName,
   };
 }
