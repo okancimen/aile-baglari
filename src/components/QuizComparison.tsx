@@ -589,9 +589,16 @@ const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparison
                           actions = actions.slice(0, 2);
                           const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
 
+                          const actionInsightText = absDiff === 0 
+                            ? insight.match 
+                            : diff > 0 
+                              ? insight.parentHigh 
+                              : insight.childHigh;
+
                           htmlBody += `
                             <div style="background: #fff3e0; border-left: 4px solid ${urgencyColor}; border-radius: 8px; padding: 14px; margin: 10px 0;">
                               <strong>${categoryEmojis[cat]} ${categoryLabels[cat]}</strong>
+                              <p style="font-size: 13px; color: #555; line-height: 1.5; margin: 8px 0;">${actionInsightText}</p>
                               <ul style="margin: 8px 0 0; padding-left: 20px;">
                                 ${actions.map((a) => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join('')}
                               </ul>
