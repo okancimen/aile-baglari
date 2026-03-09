@@ -271,7 +271,9 @@ const categoryInsights: Record<string, CategoryData> = {
   }
 };
 
-const QuizComparison = ({ parentScores, childScores, onRestart }: QuizComparisonProps) => {
+const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender }: QuizComparisonProps) => {
+  const genderEmoji = childGender === "girl" ? "👧" : "👦";
+  const displayName = childName || "Çocuk";
   const categories = Object.keys(categoryLabels);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState("");
