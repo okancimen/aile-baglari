@@ -28,6 +28,7 @@ export function useQuiz() {
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
   const [childScores, setChildScores] = useState<Record<string, number>>({});
   const [childAge, setChildAge] = useState<number>(8);
+  const [childName, setChildName] = useState<string>("");
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
@@ -81,8 +82,9 @@ export function useQuiz() {
     setPhase("age-select");
   };
 
-  const selectAge = (age: number) => {
+  const selectAge = (age: number, name: string) => {
     setChildAge(age);
+    setChildName(name);
     setPhase("parent-quiz");
     setCurrentIndex(0);
     setAnswers({});
@@ -107,6 +109,7 @@ export function useQuiz() {
     setParentScores({});
     setChildScores({});
     setChildAge(8);
+    setChildName("");
   };
 
   return {
@@ -126,5 +129,6 @@ export function useQuiz() {
     parentScores,
     childScores,
     childAge,
+    childName,
   };
 }

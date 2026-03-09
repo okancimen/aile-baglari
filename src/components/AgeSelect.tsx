@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 interface AgeSelectProps {
-  onSelect: (age: number) => void;
+  onSelect: (age: number, name: string) => void;
 }
 
 const ageGroups = [
@@ -14,6 +14,7 @@ const ageGroups = [
 
 const AgeSelect = ({ onSelect }: AgeSelectProps) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const [childName, setChildName] = useState("");
 
   return (
     <div
@@ -41,6 +42,16 @@ const AgeSelect = ({ onSelect }: AgeSelectProps) => {
         <p className="text-muted-foreground font-body mb-8">
           Yaşa uygun deneyim için çocuğunuzun yaş grubunu seçin
         </p>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            placeholder="Çocuğunuzun adı"
+            className="w-full px-5 py-3 rounded-2xl border-2 border-border bg-card text-card-foreground font-body text-lg text-center focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           {ageGroups.map((group, i) => (
@@ -75,8 +86,8 @@ const AgeSelect = ({ onSelect }: AgeSelectProps) => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => selected !== null && onSelect(selected)}
-          disabled={selected === null}
+          onClick={() => selected !== null && childName.trim() && onSelect(selected, childName.trim())}
+          disabled={selected === null || !childName.trim()}
           className="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-display font-bold text-lg text-primary-foreground transition-all disabled:opacity-30"
           style={{
             background: selected !== null ? "var(--gradient-warm)" : undefined,
