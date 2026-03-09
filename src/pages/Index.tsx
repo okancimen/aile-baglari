@@ -35,6 +35,8 @@ const Index = () => {
         parentScores={quiz.parentScores}
         childScores={quiz.childScores}
         onRestart={quiz.restart}
+        childName={quiz.childName}
+        childGender={quiz.childGender}
       />
     );
   }
