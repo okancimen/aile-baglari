@@ -7,7 +7,7 @@ interface Question {
   soru: string;
 }
 
-type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
+type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "child-done" | "results";
 
 function pickRandomPerCategory(questions: Question[], categories: string[]): Question[] {
   const selected: Question[] = [];
