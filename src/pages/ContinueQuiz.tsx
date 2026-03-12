@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
+import ChildComplete from "@/components/ChildComplete";
 import { motion } from "framer-motion";
 import { Loader2, AlertCircle } from "lucide-react";
 import quizData from "@/data/quiz-data.json";
@@ -33,9 +34,12 @@ const ContinueQuiz = () => {
   const [error, setError] = useState<string | null>(null);
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
   const [sessionId, setSessionId] = useState<string>("");
+  const [sessionEmail, setSessionEmail] = useState<string>("");
+  const [childName, setChildName] = useState<string>("");
+  const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
 
   // Child quiz state
-  const [phase, setPhase] = useState<"loading" | "child-quiz" | "results">("loading");
+  const [phase, setPhase] = useState<"loading" | "child-quiz" | "child-done" | "results">("loading");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -64,6 +68,8 @@ const ContinueQuiz = () => {
       if (data.completed) {
         setParentScores(data.parent_scores as Record<string, number>);
         setChildScores(data.child_scores as Record<string, number>);
+        setChildName((data as any).child_name || "");
+        setChildGender(((data as any).child_gender as "girl" | "boy") || "boy");
         setPhase("results");
         setLoading(false);
         return;
@@ -71,6 +77,9 @@ const ContinueQuiz = () => {
 
       setParentScores(data.parent_scores as Record<string, number>);
       setSessionId(data.id);
+      setSessionEmail(data.email || "");
+      setChildName((data as any).child_name || "");
+      setChildGender(((data as any).child_gender as "girl" | "boy") || "boy");
       const childQuestions = pickRandomPerCategory(
         quizData.cocuk_testi as Question[],
         quizData.kategoriler
@@ -85,6 +94,29 @@ const ContinueQuiz = () => {
 
   const selectAnswer = (value: number) => {
     setAnswers((prev) => ({ ...prev, [currentIndex]: value }));
+  };
+
+  const sendResultsEmail = async (targetEmail: string, sessKey: string, name: string) => {
+    const resultsUrl = `${window.location.origin}/?continue=${sessKey}`;
+    await supabase.functions.invoke("send-action-plan", {
+      body: {
+        to: targetEmail,
+        subject: `EduBot - ${name || "Çocuk"} Test Sonuçları Hazır!`,
+        htmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="text-align: center; color: #333;">🎉 ${name || "Çocuğunuz"} Testi Tamamladı!</h1>
+            <p style="color: #555; font-size: 16px; line-height: 1.6;">
+              ${name || "Çocuğunuz"} çocuk testini başarıyla tamamladı. Ebeveyn-çocuk uyum analizinizi ve kişiselleştirilmiş aksiyon planınızı görmek için aşağıdaki bağlantıya tıklayın.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resultsUrl}" style="background: linear-gradient(135deg, #2b9a8f, #3b82c4); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: bold; display: inline-block;">
+                Sonuçları Gör
+              </a>
+            </div>
+          </div>
+        `,
+      },
+    });
   };
 
   const next = async () => {
@@ -108,7 +140,16 @@ const ContinueQuiz = () => {
           .eq("id", sessionId);
       }
 
-      setPhase("results");
+      // Send results email automatically (Flow 1)
+      if (sessionEmail && sessionKey) {
+        try {
+          await sendResultsEmail(sessionEmail, sessionKey, childName);
+        } catch (err) {
+          console.error("Failed to send results email:", err);
+        }
+      }
+
+      setPhase("child-done");
     }
   };
 
@@ -150,12 +191,27 @@ const ContinueQuiz = () => {
     );
   }
 
+  if (phase === "child-done") {
+    return (
+      <ChildComplete
+        childName={childName}
+        childGender={childGender}
+        parentScores={parentScores}
+        childScores={childScores}
+        existingEmail={sessionEmail || undefined}
+        sessionId={sessionId}
+      />
+    );
+  }
+
   if (phase === "results") {
     return (
       <QuizComparison
         parentScores={parentScores}
         childScores={childScores}
         onRestart={restart}
+        childName={childName}
+        childGender={childGender}
       />
     );
   }
