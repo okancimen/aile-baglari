@@ -132,6 +132,7 @@ export function useQuiz() {
     selectAge,
     startParentQuiz,
     startChildQuiz,
+    showResults,
     restart,
     parentScores,
     childScores,
