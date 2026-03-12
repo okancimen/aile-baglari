@@ -104,6 +104,10 @@ export function useQuiz() {
     setAnswers({});
   };
 
+  const showResults = () => {
+    setPhase("results");
+  };
+
   const restart = () => {
     setPhase("landing");
     setCurrentIndex(0);
