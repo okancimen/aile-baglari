@@ -7,7 +7,7 @@ interface Question {
   soru: string;
 }
 
-type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
+type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "child-done" | "results";
 
 function pickRandomPerCategory(questions: Question[], categories: string[]): Question[] {
   const selected: Question[] = [];
@@ -68,7 +68,7 @@ export function useQuiz() {
         setPhase("parent-done");
       } else if (phase === "child-quiz") {
         setChildScores(scores);
-        setPhase("results");
+        setPhase("child-done");
       }
       setCurrentIndex(0);
       setAnswers({});
@@ -104,6 +104,10 @@ export function useQuiz() {
     setAnswers({});
   };
 
+  const showResults = () => {
+    setPhase("results");
+  };
+
   const restart = () => {
     setPhase("landing");
     setCurrentIndex(0);
@@ -128,6 +132,7 @@ export function useQuiz() {
     selectAge,
     startParentQuiz,
     startChildQuiz,
+    showResults,
     restart,
     parentScores,
     childScores,
