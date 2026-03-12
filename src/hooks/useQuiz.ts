@@ -68,7 +68,7 @@ export function useQuiz() {
         setPhase("parent-done");
       } else if (phase === "child-quiz") {
         setChildScores(scores);
-        setPhase("results");
+        setPhase("child-done");
       }
       setCurrentIndex(0);
       setAnswers({});
