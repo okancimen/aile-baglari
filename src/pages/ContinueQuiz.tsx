@@ -33,6 +33,8 @@ const ContinueQuiz = () => {
   const [error, setError] = useState<string | null>(null);
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
   const [sessionId, setSessionId] = useState<string>("");
+  const [childName, setChildName] = useState<string>("");
+  const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
 
   // Child quiz state
   const [phase, setPhase] = useState<"loading" | "child-quiz" | "results">("loading");
@@ -63,7 +65,9 @@ const ContinueQuiz = () => {
 
       if (data.completed) {
         setParentScores(data.parent_scores as Record<string, number>);
-        setChildScores(data.child_scores as Record<string, number>);
+        setChildScores((data.child_scores as Record<string, number>) || {});
+        setChildName(data.child_name || "");
+        setChildGender((data.child_gender as "girl" | "boy") || "boy");
         setPhase("results");
         setLoading(false);
         return;
@@ -71,6 +75,8 @@ const ContinueQuiz = () => {
 
       setParentScores(data.parent_scores as Record<string, number>);
       setSessionId(data.id);
+      setChildName(data.child_name || "");
+      setChildGender((data.child_gender as "girl" | "boy") || "boy");
       const childQuestions = pickRandomPerCategory(
         quizData.cocuk_testi as Question[],
         quizData.kategoriler
@@ -156,6 +162,8 @@ const ContinueQuiz = () => {
         parentScores={parentScores}
         childScores={childScores}
         onRestart={restart}
+        childName={childName}
+        childGender={childGender}
       />
     );
   }

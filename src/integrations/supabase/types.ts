@@ -20,8 +20,10 @@ export type Database = {
           child_name: string | null
           child_scores: Json | null
           completed: boolean
+          completed_at: string | null
           created_at: string
           email: string | null
+          expires_at: string
           id: string
           parent_scores: Json
           session_key: string
@@ -31,8 +33,10 @@ export type Database = {
           child_name?: string | null
           child_scores?: Json | null
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           email?: string | null
+          expires_at?: string
           id?: string
           parent_scores?: Json
           session_key?: string
@@ -42,8 +46,10 @@ export type Database = {
           child_name?: string | null
           child_scores?: Json | null
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           email?: string | null
+          expires_at?: string
           id?: string
           parent_scores?: Json
           session_key?: string
@@ -55,7 +61,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_quiz_session_by_key: {
+        Args: {
+          p_child_scores: Json
+          p_session_key: string
+        }
+        Returns: {
+          email: string | null
+          id: string
+          session_key: string
+        }[]
+      }
+      create_quiz_session: {
+        Args: {
+          p_child_gender?: string | null
+          p_child_name?: string | null
+          p_child_scores?: Json | null
+          p_completed?: boolean
+          p_email?: string | null
+          p_parent_scores: Json
+        }
+        Returns: {
+          email: string | null
+          id: string
+          session_key: string
+        }[]
+      }
+      get_quiz_session_by_key: {
+        Args: {
+          p_session_key: string
+        }
+        Returns: {
+          child_gender: string | null
+          child_name: string | null
+          child_scores: Json | null
+          completed: boolean
+          email: string | null
+          expires_at: string
+          id: string
+          parent_scores: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

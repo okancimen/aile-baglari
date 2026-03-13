@@ -3,13 +3,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Baby, CheckCircle, Mail, Loader2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { createQuizSession } from "@/lib/quiz-session";
 
 interface ParentDoneProps {
   onStartChildQuiz: () => void;
   parentScores: Record<string, number>;
+  childName: string;
+  childGender: "girl" | "boy";
 }
 
-const ParentDone = ({ onStartChildQuiz, parentScores }: ParentDoneProps) => {
+const ParentDone = ({
+  onStartChildQuiz,
+  parentScores,
+  childName,
+  childGender,
+}: ParentDoneProps) => {
   const [showEmailOption, setShowEmailOption] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,19 +31,13 @@ const ParentDone = ({ onStartChildQuiz, parentScores }: ParentDoneProps) => {
 
     setSending(true);
     try {
-      // Save session to database
-      const { data: session, error: dbError } = await supabase
-        .from("quiz_sessions")
-        .insert({
-          parent_scores: parentScores,
-          email: email,
-        })
-        .select("session_key")
-        .single();
-
-      if (dbError || !session) {
-        throw new Error(dbError?.message || "Oturum kaydedilemedi");
-      }
+      const session = await createQuizSession({
+        p_parent_scores: parentScores,
+        p_email: email,
+        p_child_name: childName,
+        p_child_gender: childGender,
+        p_completed: false,
+      });
 
       const continueUrl = `${window.location.origin}/?continue=${session.session_key}`;
 

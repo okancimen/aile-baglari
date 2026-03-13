@@ -50,6 +50,32 @@ interface CategoryData {
   };
 }
 
+const MAX_CATEGORY_DIFF = 4;
+
+function calculateCompatibilityScore(
+  categories: string[],
+  parentScores: Record<string, number>,
+  childScores: Record<string, number>
+) {
+  if (categories.length === 0) {
+    return 100;
+  }
+
+  // RMS penalizes large mismatches more than a simple average absolute gap.
+  // This makes the overall score more sensitive to strong divergence.
+  const squaredGapSum = categories.reduce((sum, cat) => {
+    const p = parentScores[cat] ?? 3;
+    const c = childScores[cat] ?? 3;
+    const normalizedDiff = Math.abs(p - c) / MAX_CATEGORY_DIFF;
+    return sum + normalizedDiff ** 2;
+  }, 0);
+
+  const rmsGap = Math.sqrt(squaredGapSum / categories.length);
+  const rawScore = Math.round(100 * (1 - rmsGap));
+
+  return Math.max(0, Math.min(100, rawScore));
+}
+
 const categoryInsights: Record<string, CategoryData> = {
   duzen_ve_rutin: {
     match: "Düzen ve rutin konusunda uyumlusunuz!",
@@ -278,14 +304,11 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
-
-  const totalDiff = categories.reduce((sum, cat) => {
-    const p = parentScores[cat] || 3;
-    const c = childScores[cat] || 3;
-    return sum + Math.abs(p - c);
-  }, 0);
-  const avgDiff = totalDiff / categories.length;
-  const compatibilityScore = Math.max(0, Math.round(100 - avgDiff * 20));
+  const compatibilityScore = calculateCompatibilityScore(
+    categories,
+    parentScores,
+    childScores
+  );
 
   const getCompatLabel = (score: number) => {
     if (score >= 80) return { text: "Mükemmel Uyum! 🌟", color: "hsl(150, 60%, 40%)" };

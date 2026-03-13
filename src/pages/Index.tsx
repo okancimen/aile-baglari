@@ -26,7 +26,14 @@ const Index = () => {
   }
 
   if (quiz.phase === "parent-done") {
-    return <ParentDone onStartChildQuiz={quiz.startChildQuiz} parentScores={quiz.parentScores} />;
+    return (
+      <ParentDone
+        onStartChildQuiz={quiz.startChildQuiz}
+        parentScores={quiz.parentScores}
+        childName={quiz.childName}
+        childGender={quiz.childGender}
+      />
+    );
   }
 
   if (quiz.phase === "results") {
