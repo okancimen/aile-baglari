@@ -6,7 +6,6 @@ import ParentDone from "@/components/ParentDone";
 import ContinueQuiz from "@/pages/ContinueQuiz";
 import AgeSelect from "@/components/AgeSelect";
 import ChildQuizCharacter from "@/components/ChildQuizCharacter";
-import ChildComplete from "@/components/ChildComplete";
 import { useQuiz } from "@/hooks/useQuiz";
 
 const Index = () => {
@@ -28,18 +27,6 @@ const Index = () => {
 
   if (quiz.phase === "parent-done") {
     return <ParentDone onStartChildQuiz={quiz.startChildQuiz} parentScores={quiz.parentScores} />;
-  }
-
-  if (quiz.phase === "child-done") {
-    return (
-      <ChildComplete
-        childName={quiz.childName}
-        childGender={quiz.childGender}
-        parentScores={quiz.parentScores}
-        childScores={quiz.childScores}
-        childAge={quiz.childAge}
-      />
-    );
   }
 
   if (quiz.phase === "results") {

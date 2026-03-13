@@ -16,8 +16,6 @@ export type Database = {
     Tables: {
       quiz_sessions: {
         Row: {
-          child_gender: string | null
-          child_name: string | null
           child_scores: Json | null
           completed: boolean
           created_at: string
@@ -27,8 +25,6 @@ export type Database = {
           session_key: string
         }
         Insert: {
-          child_gender?: string | null
-          child_name?: string | null
           child_scores?: Json | null
           completed?: boolean
           created_at?: string
@@ -38,8 +34,6 @@ export type Database = {
           session_key?: string
         }
         Update: {
-          child_gender?: string | null
-          child_name?: string | null
           child_scores?: Json | null
           completed?: boolean
           created_at?: string
