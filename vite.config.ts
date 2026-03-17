@@ -4,13 +4,20 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// Production: serve at https://app.eduentry.ai (base path /)
 export default defineConfig(({ mode }) => ({
+  base: "/",
   server: {
     host: "::",
     port: 8080,
     hmr: {
       overlay: false,
     },
+  },
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+    sourcemap: mode !== "production",
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

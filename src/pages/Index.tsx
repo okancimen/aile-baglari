@@ -44,6 +44,7 @@ const Index = () => {
         onRestart={quiz.restart}
         childName={quiz.childName}
         childGender={quiz.childGender}
+        childAge={quiz.childAge}
       />
     );
   }

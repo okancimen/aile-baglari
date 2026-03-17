@@ -1,5 +1,5 @@
 // 3D Radar Chart version
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, Mail, X, Loader2, MessageSquareWarning } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ interface QuizComparisonProps {
   onRestart: () => void;
   childName?: string;
   childGender?: "girl" | "boy";
+  childAge?: number;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -297,13 +298,18 @@ const categoryInsights: Record<string, CategoryData> = {
   }
 };
 
-const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender }: QuizComparisonProps) => {
+const API_BASE = import.meta.env.VITE_LLM_API_URL;
+
+const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender, childAge }: QuizComparisonProps) => {
   const genderEmoji = childGender === "girl" ? "👧" : "👦";
   const displayName = childName || "Çocuk";
   const categories = Object.keys(categoryLabels);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [generatedInsights, setGeneratedInsights] = useState<Record<string, { summary: string; actions: string[] }> | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(false);
   const compatibilityScore = calculateCompatibilityScore(
     categories,
     parentScores,
@@ -325,6 +331,57 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
     const diffB = Math.abs((parentScores[b] || 3) - (childScores[b] || 3));
     return diffB - diffA;
   });
+
+  useEffect(() => {
+    if (!API_BASE || sortedByDiff.length === 0) return;
+    const top3 = sortedByDiff.slice(0, 3);
+    const payload = {
+      childName: childName || undefined,
+      childAge: childAge ?? undefined,
+      childGender: childGender || undefined,
+      categories: top3.map((cat) => {
+        const p = parentScores[cat] ?? 3;
+        const c = childScores[cat] ?? 3;
+        const diff = p - c;
+        const absDiff = Math.abs(diff);
+        const direction = absDiff === 0 ? "match" : diff > 0 ? "parentHigh" : "childHigh";
+        return {
+          key: cat,
+          label: categoryLabels[cat],
+          parentScore: p,
+          childScore: c,
+          direction,
+        };
+      }),
+    };
+    setInsightsLoading(true);
+    setInsightsError(false);
+    fetch(`${API_BASE.replace(/\/$/, "")}/api/generate-action-plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then((data) => {
+        const insights = data?.insights;
+        if (Array.isArray(insights) && insights.length === top3.length) {
+          const next: Record<string, { summary: string; actions: string[] }> = {};
+          top3.forEach((cat, i) => {
+            const item = insights[i];
+            if (item && typeof item.summary === "string" && Array.isArray(item.actions)) {
+              next[cat] = { summary: item.summary, actions: item.actions.slice(0, 2) };
+            }
+          });
+          setGeneratedInsights(next);
+        }
+      })
+      .catch(() => setInsightsError(true))
+      .finally(() => setInsightsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once when results are shown; scores/context are stable
+  }, []);
 
   return (
     <div className="min-h-screen px-4 py-12" style={{ background: "var(--gradient-hero)" }}>
@@ -412,6 +469,13 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
             Sonuçlarınıza göre en çok dikkat gerektiren alanlar ve size özel öneriler:
           </p>
 
+          {insightsLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mb-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Önerileriniz hazırlanıyor…
+            </div>
+          )}
+
           <div className="relative">
             <div className="grid gap-5">
               {sortedByDiff.slice(0, 3).map((cat, i) => {
@@ -431,6 +495,10 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                 }
 
                 actions = actions.slice(0, 2);
+
+                const generated = generatedInsights?.[cat];
+                const summary = generated?.summary ?? (absDiff === 0 ? insight.match : diff > 0 ? insight.parentHigh : insight.childHigh);
+                const displayActions = (generated?.actions?.length ? generated.actions : actions);
 
                 const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
                 const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
@@ -459,16 +527,11 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
 
                     {/* Açıklayıcı paragraf */}
                     <p className="text-sm font-body text-muted-foreground mb-4 leading-relaxed">
-                      {absDiff === 0 ?
-                      insight.match :
-                      diff > 0 ?
-                      insight.parentHigh :
-                      insight.childHigh
-                      }
+                      {summary}
                     </p>
 
                     <ul className="space-y-2">
-                      {actions.map((action, j) =>
+                      {displayActions.map((action, j) =>
                       <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
                           <span className="text-primary mt-0.5 shrink-0">✦</span>
                           <span>{action}</span>
