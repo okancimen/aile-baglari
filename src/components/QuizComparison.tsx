@@ -298,7 +298,7 @@ const categoryInsights: Record<string, CategoryData> = {
   }
 };
 
-const API_BASE = import.meta.env.VITE_LLM_API_URL;
+const API_BASE = import.meta.env.VITE_EDUENTRY_API_URL;
 
 const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender, childAge }: QuizComparisonProps) => {
   const genderEmoji = childGender === "girl" ? "👧" : "👦";
