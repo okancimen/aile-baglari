@@ -1,0 +1,7 @@
+# app.eduentry.ai server { ... } bloğunun içine ekleyin.
+# Önkoşul: eduentry-api veya eduentry_llm repo deploy/logs-setup.md içindeki mkdir/chown.
+#
+# Erişim logu (anket statik sitesi istekleri):
+access_log /var/www/logs/eduentry-survey.log combined;
+# Hatalar ayrı dosyada (tek dosyada birleştirmek önerilmez):
+error_log /var/www/logs/eduentry-survey-error.log warn;
