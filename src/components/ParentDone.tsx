@@ -10,6 +10,7 @@ interface ParentDoneProps {
   parentScores: Record<string, number>;
   childName: string;
   childGender: "girl" | "boy";
+  childAge: number;
 }
 
 const ParentDone = ({
@@ -17,6 +18,7 @@ const ParentDone = ({
   parentScores,
   childName,
   childGender,
+  childAge,
 }: ParentDoneProps) => {
   const [showEmailOption, setShowEmailOption] = useState(false);
   const [email, setEmail] = useState("");
@@ -36,6 +38,7 @@ const ParentDone = ({
         p_email: email,
         p_child_name: childName,
         p_child_gender: childGender,
+        p_child_age: childAge,
         p_completed: false,
       });
 

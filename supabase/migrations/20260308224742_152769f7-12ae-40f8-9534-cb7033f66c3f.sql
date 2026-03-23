@@ -1,3 +1,5 @@
+-- gen_random_bytes() için (session_key varsayılanı)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE public.quiz_sessions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

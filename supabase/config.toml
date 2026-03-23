@@ -1,4 +1,7 @@
-project_id = "nhntejhjcimpjafqsrnm"
+project_id = "psyzmjxndrvpzttmnhgm"
 
 [functions.send-action-plan]
+verify_jwt = false
+
+[functions.ensure-action-plan]
 verify_jwt = false

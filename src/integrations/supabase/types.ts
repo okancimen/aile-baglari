@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       quiz_sessions: {
         Row: {
+          action_insights: Json | null
+          child_age: number | null
           child_gender: string | null
           child_name: string | null
           child_scores: Json | null
@@ -29,6 +31,8 @@ export type Database = {
           session_key: string
         }
         Insert: {
+          action_insights?: Json | null
+          child_age?: number | null
           child_gender?: string | null
           child_name?: string | null
           child_scores?: Json | null
@@ -42,6 +46,8 @@ export type Database = {
           session_key?: string
         }
         Update: {
+          action_insights?: Json | null
+          child_age?: number | null
           child_gender?: string | null
           child_name?: string | null
           child_scores?: Json | null
@@ -74,6 +80,7 @@ export type Database = {
       }
       create_quiz_session: {
         Args: {
+          p_child_age?: number | null
           p_child_gender?: string | null
           p_child_name?: string | null
           p_child_scores?: Json | null
@@ -92,6 +99,8 @@ export type Database = {
           p_session_key: string
         }
         Returns: {
+          action_insights: Json | null
+          child_age: number | null
           child_gender: string | null
           child_name: string | null
           child_scores: Json | null

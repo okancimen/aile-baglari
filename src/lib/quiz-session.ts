@@ -8,6 +8,7 @@ type CreateQuizSessionPayload = {
   p_child_gender?: string | null;
   p_child_scores?: Json | null;
   p_completed?: boolean;
+  p_child_age?: number | null;
 };
 
 export const createQuizSession = async (payload: CreateQuizSessionPayload) => {

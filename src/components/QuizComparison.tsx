@@ -4,14 +4,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, Mail, X, Loader2, MessageSquareWarning } from "lucide-react";
 import { toast } from "sonner";
 import RadarChart3D from "./RadarChart3D";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
   childScores: Record<string, number>;
   onRestart: () => void;
+  /** quiz_sessions.session_key — Edge Function ile tek seferlik LLM + DB */
+  sessionKey: string;
   childName?: string;
   childGender?: "girl" | "boy";
   childAge?: number;
+}
+
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 const categoryLabels: Record<string, string> = {
@@ -40,17 +51,6 @@ const categoryEmojis: Record<string, string> = {
   odaklanma: "🎯"
 };
 
-interface CategoryData {
-  match: string;
-  parentHigh: string;
-  childHigh: string;
-  actions: {
-    match: string[];
-    parentHigh: string[];
-    childHigh: string[];
-  };
-}
-
 const MAX_CATEGORY_DIFF = 4;
 
 function calculateCompatibilityScore(
@@ -77,230 +77,15 @@ function calculateCompatibilityScore(
   return Math.max(0, Math.min(100, rawScore));
 }
 
-const categoryInsights: Record<string, CategoryData> = {
-  duzen_ve_rutin: {
-    match: "Düzen ve rutin konusunda uyumlusunuz!",
-    parentHigh: "Ebeveyn daha fazla düzen bekliyor, çocuk daha esnek bir yapıya sahip.",
-    childHigh: "Çocuğunuz rutinlere doğal olarak yatkın, beklentileriniz gerçekçi.",
-    actions: {
-      match: [
-      "Birlikte haftalık rutin takvimi oluşturun ve duvara asın.",
-      "Rutinleri oyunlaştırarak çocuğunuzun motivasyonunu artırın."],
-
-      parentHigh: [
-      "Katı kurallar yerine 'esnek çerçeveler' oluşturun — örneğin ödev saatini 16:00-18:00 arası bırakın, tam saati çocuğunuz seçsin.",
-      "Görsel bir rutin panosu hazırlayın; çocuğunuz tamamladığı adımları işaretlesin.",
-      "Haftada bir gün 'kuralsız gün' tanıyarak çocuğunuzun özgür karar vermesine izin verin."],
-
-      childHigh: [
-      "Çocuğunuzun düzen sevgisini destekleyin, kendi odasını organize etmesine sorumluluk verin.",
-      "Rutinlerde küçük sürprizler ekleyerek esnekliği de öğretin."]
-
-    }
-  },
-  sosyallik: {
-    match: "Sosyallik konusunda benzer bakış açılarınız var.",
-    parentHigh: "Ebeveyn daha sosyal bir çocuk bekliyor; çocuğunuz daha sakin bir yapıda olabilir.",
-    childHigh: "Çocuğunuz sosyal ortamları seviyor, bu enerjisini destekleyin!",
-    actions: {
-      match: [
-      "Birlikte sosyal etkinliklere katılarak bağınızı güçlendirin.",
-      "Çocuğunuzla rol yapma oyunları oynayarak sosyal becerilerini geliştirin."],
-
-      parentHigh: [
-      "Çocuğunuzu kalabalık gruplara zorlamak yerine 1-2 kişilik küçük buluşmalar planlayın.",
-      "Sosyal ortamlarda 'güvenli liman' olun — yanında durun, hazır olduğunda geri çekilin.",
-      "İçe dönüklüğün bir zayıflık olmadığını kabul edin; derin düşünme ve gözlem yeteneği olarak değerlendirin.",
-      "Sosyal becerileri evde güvenli ortamda pratik edin: selamlaşma, göz teması, teşekkür etme oyunları."],
-
-      childHigh: [
-      "Çocuğunuzun sosyal enerjisini takım sporları veya drama kulübüne yönlendirin.",
-      "Arkadaş edinme becerisini takdir edin ve eve arkadaş davet etmesini teşvik edin.",
-      "Sosyal becerilerini liderlik fırsatlarıyla destekleyin."]
-
-    }
-  },
-  sebat_ve_azim: {
-    match: "Sebat ve azim konusunda uyum içindesiniz.",
-    parentHigh: "Ebeveyn daha fazla kararlılık bekliyor; çocuğunuzun motivasyonunu artırın.",
-    childHigh: "Çocuğunuz azimli bir yapıya sahip, onu desteklemeye devam edin!",
-    actions: {
-      match: [
-      "Birlikte uzun vadeli bir proje başlatın (puzzle, maket, bahçe vb.).",
-      "Tamamlanan hedefleri kutlayarak motivasyonu artırın."],
-
-      parentHigh: [
-      "Büyük görevleri küçük, başarılabilir adımlara bölün. Her adımı kutlayın.",
-      "'Henüz yapamıyorum' dilini öğretin — 'Yapamıyorum' yerine 'Henüz öğrenmedim' deyin.",
-      "Süreç odaklı övgü kullanın: 'Ne kadar çok çalıştın!' (sonuç değil, çaba övün).",
-      "Zorluk seviyesini kademeli artırın; çocuğunuzun 'akış' durumunu yakalamasına yardımcı olun."],
-
-      childHigh: [
-      "Azimli yapısını takdir edin ama mükemmeliyetçiliğe dönüşmemesine dikkat edin.",
-      "Bazen 'bırakmak' veya 'ara vermek' in de sağlıklı olduğunu öğretin.",
-      "Zorlu ama ulaşılabilir hedefler koyarak gelişimini destekleyin."]
-
-    }
-  },
-  duyusal_hassasiyet: {
-    match: "Duyusal hassasiyet konusunda anlayış birliği var.",
-    parentHigh: "Ebeveyn daha az hassasiyet bekliyor; çocuğunuzun duyusal ihtiyaçlarına dikkat edin.",
-    childHigh: "Çocuğunuz duyusal uyaranlara karşı hassas, ortamı ona göre düzenleyin.",
-    actions: {
-      match: [
-      "Ev ortamında duyusal dengeyi birlikte ayarlayın (ışık, ses, koku).",
-      "Çocuğunuzun rahat hissettiği ortam koşullarını birlikte keşfedin."],
-
-      parentHigh: [
-      "Duyusal hassasiyeti 'nazlanma' olarak görmeyin — bu nörolojik bir farklılıktır.",
-      "Kıyafet etiketlerini kesin, yumuşak kumaşlar tercih edin, çocuğunuzun seçimine saygı gösterin.",
-      "Gürültülü ortamlara gitmeden önce çocuğunuzu hazırlayın ve 'kaçış planı' oluşturun.",
-      "Yemek konusunda zorlamayın; yeni tatları küçük porsiyonlarla ve baskısız tanıtın."],
-
-      childHigh: [
-      "Hassasiyetini bir güç olarak çerçeveleyin — detayları fark etme yeteneği.",
-      "Evde sakin bir köşe oluşturun, aşırı uyarılma durumunda oraya çekilebilsin.",
-      "Duyusal oyunlar (kum, hamur, su) ile yavaş yavaş toleransını artırın."]
-
-    }
-  },
-  uyum_saglama: {
-    match: "Uyum sağlama konusunda paralel düşünüyorsunuz.",
-    parentHigh: "Ebeveyn hızlı adaptasyon bekliyor; çocuğunuza geçiş süreleri tanıyın.",
-    childHigh: "Çocuğunuz değişimlere kolay uyum sağlıyor, harika!",
-    actions: {
-      match: [
-      "Değişiklikleri birlikte planlayarak her ikinizin de hazır hissetmesini sağlayın.",
-      "Yeni deneyimleri maceraya dönüştürün."],
-
-      parentHigh: [
-      "Değişikliklerden önce çocuğunuza 'ön bilgi' verin: 'Yarın planımız değişecek, sana anlatayım.'",
-      "Geçiş nesneleri kullanın — yeni ortama giderken tanıdık bir oyuncak veya battaniye götürsün.",
-      "'Sosyal hikayeler' tekniğini kullanın: değişikliği önceden hikayeleştirerek anlatın.",
-      "Uyum sürecine zaman tanıyın, 'birkaç gün' beklentisini 'birkaç hafta'ya uzatın."],
-
-      childHigh: [
-      "Uyum yeteneğini takdir edin ve yeni deneyimler sunmaya devam edin.",
-      "Değişimlere kolay uyum sağlaması, duygularını bastırdığı anlamına gelmediğinden emin olun."]
-
-    }
-  },
-  duygusal_tepki: {
-    match: "Duygusal tepkiler konusunda uyumlusunuz.",
-    parentHigh: "Ebeveyn daha kontrollü tepkiler bekliyor; çocuğunuzun duygularını ifade etmesine alan tanıyın.",
-    childHigh: "Çocuğunuz duygularını yoğun yaşıyor, bu normaldir ve desteklenmelidir.",
-    actions: {
-      match: [
-      "Duyguları isimlendirme pratiği yapın: 'Şu an üzgün/kızgın/heyecanlı hissediyorsun.'",
-      "Duygu günlüğü tutarak duygusal farkındalığı birlikte geliştirin."],
-
-      parentHigh: [
-      "Çocuğunuzun ağlamasını engellemeye çalışmayın — önce duyguyu kabul edin: 'Çok üzüldüğünü görüyorum.'",
-      "Sakinleşme stratejileri birlikte oluşturun: derin nefes, 5-4-3-2-1 tekniği, sarılma.",
-      "'Duygu termometresi' kullanın: 1-10 arası hissini puanlamasını isteyin, böylece iletişim kolaylaşır.",
-      "Kendi duygusal tepkilerinizi model olarak gösterin: 'Ben de kızdığımda derin nefes alıyorum.'"],
-
-      childHigh: [
-      "Yoğun duygularını bastırmak yerine sağlıklı ifade yolları öğretin (resim yapma, fiziksel aktivite).",
-      "Duygusal yoğunluğu bir zenginlik olarak görün — empati yeteneği yüksek olabilir.",
-      "Sakinleşme köşesi oluşturun, yastık, battaniye ve sevdiği nesnelerle."]
-
-    }
-  },
-  bagimsizlik: {
-    match: "Bağımsızlık beklentileriniz örtüşüyor.",
-    parentHigh: "Ebeveyn daha fazla bağımsızlık bekliyor; adım adım sorumluluk verin.",
-    childHigh: "Çocuğunuz bağımsız olmak istiyor, ona güvenli alanlar yaratın.",
-    actions: {
-      match: [
-      "Yaşına uygun sorumluluklar listesi oluşturup birlikte takip edin.",
-      "Başarılarını kutlayarak öz güvenini pekiştirin."],
-
-      parentHigh: [
-      "'Seçim hakkı' verin: 'Kırmızı mı mavi mi tişört?' gibi küçük kararlarla başlayın.",
-      "Hata yapmasına izin verin — çorabını ters giyse bile müdahale etmeyin, deneyimleyerek öğrensin.",
-      "Yardım istediğinde hemen yapmak yerine 'Sen önce dene, takılırsan buradayım' deyin.",
-      "Sorumluluk tablosu hazırlayın ve tamamladığı görevler için övgü verin."],
-
-      childHigh: [
-      "Bağımsızlık isteğine güvenli sınırlar çizerek destek olun.",
-      "Kendi başına karar vermesine izin verin ama sonuçlarını birlikte değerlendirin.",
-      "Güvenli bir şekilde risk almasına alan tanıyın."]
-
-    }
-  },
-  fiziksel_aktivite: {
-    match: "Fiziksel aktivite konusunda aynı sayfadasınız.",
-    parentHigh: "Ebeveyn daha aktif bir çocuk bekliyor; çocuğunuzun tercihlerine de kulak verin.",
-    childHigh: "Çocuğunuz çok enerjik, fiziksel aktivite fırsatları sunun!",
-    actions: {
-      match: [
-      "Birlikte düzenli fiziksel aktivite yapın (yürüyüş, bisiklet, yüzme).",
-      "Hareket ve sakinlik arasında denge kurun."],
-
-      parentHigh: [
-      "Çocuğunuzun ilgisini çeken aktiviteyi bulun — her çocuk koşmayı sevmek zorunda değil; dans, yüzme, yoga da olabilir.",
-      "Ekran süresini kısıtlamak yerine, fiziksel aktiviteyi daha çekici hale getirin.",
-      "Hareket molları verin: 20 dk ödev, 10 dk hareket, tekrar ödev.",
-      "Sakin aktiviteleri de değerli görün: kitap okuma, resim yapma da gelişim için önemlidir."],
-
-      childHigh: [
-      "Enerji harcayabileceği güvenli alanlar ve zamanlar oluşturun.",
-      "Yapılandırılmış spor aktivitelerine (takım sporları, jimnastik) yönlendirin.",
-      "Hareketi ödül olarak kullanın: 'Ödevini bitirirsen parka gidebiliriz.'",
-      "Enerji yönetimini öğretin: ne zaman hareket, ne zaman sakinlik."]
-
-    }
-  },
-  merak_ve_kesif: {
-    match: "Merak ve keşif konusunda uyum var.",
-    parentHigh: "Ebeveyn daha meraklı bir çocuk bekliyor; çocuğunuzun ilgi alanlarını keşfedin.",
-    childHigh: "Çocuğunuz çok meraklı, bu harika bir özellik - destekleyin!",
-    actions: {
-      match: [
-      "Birlikte bilim deneyleri veya doğa keşifleri yapın.",
-      "Sorularını ciddiye alın ve birlikte cevap araştırın."],
-
-      parentHigh: [
-      "Merakı doğrudan soru sorarak değil, ortam hazırlayarak tetikleyin: ilginç kitaplar, deneyler, doğa yürüyüşleri.",
-      "'Neden?' sorusunu siz sorun: 'Sence bu neden böyle?' diyerek düşünmeye teşvik edin.",
-      "Çocuğunuzun mevcut ilgi alanlarını keşfedin ve o alanı derinleştirmesine yardımcı olun."],
-
-      childHigh: [
-      "'Neden?' sorularına sabırla cevap verin veya birlikte araştırın.",
-      "Eşyaları kurcalamasına güvenli bir alan sağlayın (eski elektronik aletler, deney setleri).",
-      "Merakını proje bazlı aktivitelere dönüştürün: herbaryum, böcek koleksiyonu, basit robotik.",
-      "Müze, bilim merkezi ve doğa gezilerine düzenli olarak gidin."]
-
-    }
-  },
-  odaklanma: {
-    match: "Odaklanma konusunda benzer beklentileriniz var.",
-    parentHigh: "Ebeveyn daha uzun odaklanma bekliyor; yaşa uygun beklentiler belirleyin.",
-    childHigh: "Çocuğunuz iyi odaklanabiliyor, onu zorlayan aktiviteler sunun.",
-    actions: {
-      match: [
-      "Odaklanma gerektiren aktiviteleri birlikte yapın (bulmaca, lego, kitap okuma).",
-      "Dikkat süresini kademeli olarak artırın."],
-
-      parentHigh: [
-      "Yaşa uygun odaklanma sürelerini bilin: 5 yaş = 10-15 dk, 8 yaş = 20-25 dk, 12 yaş = 30-40 dk.",
-      "Dikkat dağıtıcıları azaltın: sessiz çalışma alanı, telefon uzakta, masayı toplayın.",
-      "Pomodoro tekniğini çocuğa uyarlayın: 15 dk çalış, 5 dk oyun, tekrar.",
-      "İlgi alanındaki konularla başlayın — sevdiği konuda odaklanma süresi doğal olarak uzar."],
-
-      childHigh: [
-      "İyi odaklanma becerisini takdir edin ve zorlayıcı projeler sunun.",
-      "Uzun süre odaklanma sonrası mola vermesini hatırlatın — aşırı odaklanma da yorucu olabilir.",
-      "Farklı alanlarda odaklanmasını teşvik edin (sanat, bilim, müzik)."]
-
-    }
-  }
-};
-
-const API_BASE = import.meta.env.VITE_EDUENTRY_API_URL;
-
-const QuizComparison = ({ parentScores, childScores, onRestart, childName, childGender, childAge }: QuizComparisonProps) => {
+const QuizComparison = ({
+  parentScores,
+  childScores,
+  onRestart,
+  sessionKey,
+  childName,
+  childGender,
+  childAge,
+}: QuizComparisonProps) => {
   const genderEmoji = childGender === "girl" ? "👧" : "👦";
   const displayName = childName || "Çocuk";
   const categories = Object.keys(categoryLabels);
@@ -333,55 +118,79 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
   });
 
   useEffect(() => {
-    if (!API_BASE || sortedByDiff.length === 0) return;
-    const top3 = sortedByDiff.slice(0, 3);
-    const payload = {
-      childName: childName || undefined,
-      childAge: childAge ?? undefined,
-      childGender: childGender || undefined,
-      categories: top3.map((cat) => {
-        const p = parentScores[cat] ?? 3;
-        const c = childScores[cat] ?? 3;
-        const diff = p - c;
-        const absDiff = Math.abs(diff);
-        const direction = absDiff === 0 ? "match" : diff > 0 ? "parentHigh" : "childHigh";
-        return {
-          key: cat,
-          label: categoryLabels[cat],
-          parentScore: p,
-          childScore: c,
-          direction,
-        };
-      }),
-    };
+    const key = sessionKey?.trim();
+    if (!key) {
+      setInsightsError(true);
+      return;
+    }
+    let cancelled = false;
     setInsightsLoading(true);
     setInsightsError(false);
-    fetch(`${API_BASE.replace(/\/$/, "")}/api/generate-action-plan`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
-      .then((data) => {
-        const insights = data?.insights;
-        if (Array.isArray(insights) && insights.length === top3.length) {
-          const next: Record<string, { summary: string; actions: string[] }> = {};
-          top3.forEach((cat, i) => {
-            const item = insights[i];
-            if (item && typeof item.summary === "string" && Array.isArray(item.actions)) {
-              next[cat] = { summary: item.summary, actions: item.actions.slice(0, 2) };
-            }
-          });
-          setGeneratedInsights(next);
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke<{
+        category_order?: string[];
+        insights?: { summary: string; actions: string[] }[];
+        cached?: boolean;
+      }>("ensure-action-plan", { body: { session_key: key } });
+      if (cancelled) return;
+      if (error) {
+        console.error("[ERROR] ensure-action-plan invoke:", error);
+        setInsightsError(true);
+        setInsightsLoading(false);
+        return;
+      }
+      const order = data?.category_order;
+      const insights = data?.insights;
+      if (!order?.length || !insights?.length || order.length !== insights.length) {
+        setInsightsError(true);
+        setInsightsLoading(false);
+        return;
+      }
+      const next: Record<string, { summary: string; actions: string[] }> = {};
+      order.forEach((cat, i) => {
+        const item = insights[i];
+        if (item && typeof item.summary === "string" && Array.isArray(item.actions)) {
+          next[cat] = { summary: item.summary, actions: item.actions.slice(0, 2) };
         }
-      })
-      .catch(() => setInsightsError(true))
-      .finally(() => setInsightsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once when results are shown; scores/context are stable
-  }, []);
+      });
+      if (Object.keys(next).length !== order.length) {
+        setInsightsError(true);
+        setInsightsLoading(false);
+        return;
+      }
+      setGeneratedInsights(next);
+      setInsightsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionKey]);
+
+  const insightsReady =
+    !insightsLoading &&
+    !insightsError &&
+    generatedInsights !== null &&
+    categories.every((c) => Boolean(generatedInsights![c]));
+
+  if (!sessionKey?.trim()) {
+    return (
+      <div className="min-h-screen px-4 py-12 flex items-center justify-center" style={{ background: "var(--gradient-hero)" }}>
+        <div className="max-w-md text-center bg-card rounded-2xl p-8 shadow-lg">
+          <MessageSquareWarning className="w-10 h-10 mx-auto mb-3 text-destructive" />
+          <p className="font-display font-bold text-foreground mb-2">Oturum anahtarı eksik</p>
+          <p className="text-sm text-muted-foreground font-body">Aksiyon planı yüklenemiyor. Lütfen testi yeniden tamamlayın.</p>
+          <button
+            type="button"
+            onClick={onRestart}
+            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground"
+            style={{ background: "var(--gradient-warm)" }}>
+            <RotateCcw className="w-5 h-5" />
+            Başa dön
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 py-12" style={{ background: "var(--gradient-hero)" }}>
@@ -475,6 +284,12 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
               Önerileriniz hazırlanıyor…
             </div>
           )}
+          {insightsError && !insightsLoading && (
+            <div className="flex items-start gap-2 text-sm text-destructive font-body mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+              <MessageSquareWarning className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>Aksiyon planı yüklenemedi. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</span>
+            </div>
+          )}
 
           <div className="relative">
             <div className="grid gap-5">
@@ -483,22 +298,9 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                 const c = childScores[cat] || 3;
                 const diff = p - c;
                 const absDiff = Math.abs(diff);
-                const insight = categoryInsights[cat];
-                let actions: string[] = [];
-
-                if (absDiff === 0) {
-                  actions = insight.actions.match;
-                } else if (diff > 0) {
-                  actions = insight.actions.parentHigh;
-                } else {
-                  actions = insight.actions.childHigh;
-                }
-
-                actions = actions.slice(0, 2);
-
                 const generated = generatedInsights?.[cat];
-                const summary = generated?.summary ?? (absDiff === 0 ? insight.match : diff > 0 ? insight.parentHigh : insight.childHigh);
-                const displayActions = (generated?.actions?.length ? generated.actions : actions);
+                const summary = generated?.summary ?? "";
+                const displayActions = generated?.actions ?? [];
 
                 const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
                 const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
@@ -560,8 +362,10 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                 Tüm önerileri görmek için e-posta ile alın 👇
               </p>
               <button
-                onClick={() => setShowEmailModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105"
+                type="button"
+                disabled={!insightsReady}
+                onClick={() => insightsReady && setShowEmailModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105 disabled:opacity-50 disabled:pointer-events-none"
                 style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-elevated)" }}>
                 
                 <Mail className="w-5 h-5" />
@@ -616,13 +420,18 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                     }
                     setSending(true);
                     try {
+                      if (!insightsReady || !generatedInsights) {
+                        toast.error("Aksiyon planı henüz hazır değil.");
+                        return;
+                      }
                       const top3 = sortedByDiff.slice(0, 3);
+                      const gi = generatedInsights;
                       let htmlBody = `
                           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                             <h1 style="text-align: center; color: #333;">Ebeveyn-Çocuk Uyum Analizi</h1>
                             <div style="text-align: center; background: ${compat.color}; color: white; padding: 15px; border-radius: 12px; margin: 16px 0;">
                               <span style="font-size: 28px; font-weight: bold;">%${compatibilityScore}</span>
-                              <br/>${compat.text}
+                              <br/>${escHtml(compat.text)}
                             </div>
 
                             <div style="background: #e8f5e9; border-radius: 12px; padding: 16px; margin: 18px 0 24px;">
@@ -635,20 +444,15 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                               </p>
                             </div>
 
-                            <h2 style="color: #333;">Tüm Kategoriler - Detaylı Karşılaştırma</h2>`;
+                            <h2 style="color: #333;">Tüm Kategoriler - Özet (LLM)</h2>`;
 
-                      // All categories with scores and insights (no recommendations in this section)
                       categories.forEach((cat) => {
                         const p = parentScores[cat] || 3;
                         const c = childScores[cat] || 3;
                         const diff = p - c;
                         const absDiff = Math.abs(diff);
-                        const insight = categoryInsights[cat];
-
-                        let insightText = insight?.match || "";
-                        if (absDiff >= 1) {
-                          insightText = diff > 0 ? insight?.parentHigh || "" : insight?.childHigh || "";
-                        }
+                        const row = gi[cat];
+                        const insightText = row?.summary ? escHtml(row.summary) : "";
 
                         const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
                         const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
@@ -657,7 +461,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                             <div style="background: #f9f9f9; border-radius: 12px; padding: 16px; margin: 12px 0;">
                               <div style="margin-bottom: 8px;">
                                 <span style="font-size: 20px;">${categoryEmojis[cat]}</span>
-                                <strong>${categoryLabels[cat]}</strong>
+                                <strong>${escHtml(categoryLabels[cat])}</strong>
                                 <span style="background: ${urgencyColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">${urgency}</span>
                               </div>
                               <div style="font-size: 13px; color: #666; margin-bottom: 6px;">Ebeveyn: ${p}/5 | Çocuk: ${c}/5</div>
@@ -665,26 +469,21 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                             </div>`;
                       });
 
-                      // Highlighted action plan for top 3
                       htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Öncelikli Aksiyon Planı (İlk 3 Alan)</h2>`;
                       top3.forEach((cat) => {
                         const p = parentScores[cat] || 3;
                         const c = childScores[cat] || 3;
                         const diff = p - c;
                         const absDiff = Math.abs(diff);
-                        const insight = categoryInsights[cat];
-                        let actions: string[] = [];
-                        if (absDiff === 0) actions = insight.actions.match;else
-                        if (diff > 0) actions = insight.actions.parentHigh;else
-                        actions = insight.actions.childHigh;
-                        actions = actions.slice(0, 2);
+                        const actions = (gi[cat]?.actions ?? []).slice(0, 2).map((a) => escHtml(a));
                         const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
 
                         htmlBody += `
                             <div style="background: #fff3e0; border-left: 4px solid ${urgencyColor}; border-radius: 8px; padding: 14px; margin: 10px 0;">
-                              <strong>${categoryEmojis[cat]} ${categoryLabels[cat]}</strong>
+                              <strong>${categoryEmojis[cat]} ${escHtml(categoryLabels[cat])}</strong>
+                              <p style="font-size: 13px; color: #555; margin: 8px 0 4px; font-style: italic;">${escHtml(gi[cat]?.summary ?? "")}</p>
                               <ul style="margin: 8px 0 0; padding-left: 20px;">
-                                ${actions.map((a) => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join('')}
+                                ${actions.map((a) => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join("")}
                               </ul>
                             </div>`;
                       });
@@ -721,7 +520,7 @@ const QuizComparison = ({ parentScores, childScores, onRestart, childName, child
                       setSending(false);
                     }
                   }}
-                  disabled={sending}
+                  disabled={sending || !insightsReady}
                   className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
                   style={{ background: "var(--gradient-cool)" }}>
                   

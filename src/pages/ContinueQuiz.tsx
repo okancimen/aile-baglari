@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { completeQuizSessionByKey, getQuizSessionByKey } from "@/lib/quiz-session";
+import type { Json } from "@/integrations/supabase/types";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
 import { motion } from "framer-motion";
@@ -27,16 +28,15 @@ function pickRandomPerCategory(questions: Question[], categories: string[]): Que
 
 const ContinueQuiz = () => {
   const [searchParams] = useSearchParams();
-  const sessionKey = searchParams.get("continue");
+  const sessionKey = searchParams.get("continue")?.trim() ?? "";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [parentScores, setParentScores] = useState<Record<string, number>>({});
-  const [sessionId, setSessionId] = useState<string>("");
   const [childName, setChildName] = useState<string>("");
   const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
+  const [childAge, setChildAge] = useState<number | undefined>(undefined);
 
-  // Child quiz state
   const [phase, setPhase] = useState<"loading" | "child-quiz" | "results">("loading");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -51,42 +51,38 @@ const ContinueQuiz = () => {
     }
 
     const loadSession = async () => {
-      const { data, error: dbError } = await supabase
-        .from("quiz_sessions")
-        .select("*")
-        .eq("session_key", sessionKey)
-        .single();
+      try {
+        const row = await getQuizSessionByKey(sessionKey);
+        if (row.completed) {
+          setParentScores(row.parent_scores as Record<string, number>);
+          setChildScores((row.child_scores as Record<string, number>) || {});
+          setChildName(row.child_name || "");
+          setChildGender((row.child_gender as "girl" | "boy") || "boy");
+          setChildAge(row.child_age ?? undefined);
+          setPhase("results");
+          setLoading(false);
+          return;
+        }
 
-      if (dbError || !data) {
+        setParentScores(row.parent_scores as Record<string, number>);
+        setChildName(row.child_name || "");
+        setChildGender((row.child_gender as "girl" | "boy") || "boy");
+        setChildAge(row.child_age ?? undefined);
+        const childQuestions = pickRandomPerCategory(
+          quizData.cocuk_testi as Question[],
+          quizData.kategoriler as string[]
+        );
+        setQuestions(childQuestions);
+        setPhase("child-quiz");
+        setLoading(false);
+      } catch (e) {
+        console.error("[ERROR] getQuizSessionByKey:", e);
         setError("Oturum bulunamadı. Bağlantının süresi dolmuş olabilir.");
         setLoading(false);
-        return;
       }
-
-      if (data.completed) {
-        setParentScores(data.parent_scores as Record<string, number>);
-        setChildScores((data.child_scores as Record<string, number>) || {});
-        setChildName(data.child_name || "");
-        setChildGender((data.child_gender as "girl" | "boy") || "boy");
-        setPhase("results");
-        setLoading(false);
-        return;
-      }
-
-      setParentScores(data.parent_scores as Record<string, number>);
-      setSessionId(data.id);
-      setChildName(data.child_name || "");
-      setChildGender((data.child_gender as "girl" | "boy") || "boy");
-      const childQuestions = pickRandomPerCategory(
-        quizData.cocuk_testi as Question[],
-        quizData.kategoriler
-      );
-      setQuestions(childQuestions);
-      setPhase("child-quiz");
-      setLoading(false);
     };
 
-    loadSession();
+    void loadSession();
   }, [sessionKey]);
 
   const selectAnswer = (value: number) => {
@@ -97,7 +93,6 @@ const ContinueQuiz = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
-      // Finished child quiz
       const scores: Record<string, number> = {};
       questions.forEach((q, i) => {
         if (answers[i] !== undefined) {
@@ -106,15 +101,13 @@ const ContinueQuiz = () => {
       });
       setChildScores(scores);
 
-      // Save to DB
-      if (sessionId) {
-        await supabase
-          .from("quiz_sessions")
-          .update({ child_scores: scores, completed: true })
-          .eq("id", sessionId);
+      try {
+        await completeQuizSessionByKey(sessionKey, scores as Json);
+        setPhase("results");
+      } catch (e) {
+        console.error("[ERROR] completeQuizSessionByKey:", e);
+        setError("Sonuçlar kaydedilemedi. Lütfen bağlantınızı kontrol edip tekrar deneyin.");
       }
-
-      setPhase("results");
     }
   };
 
@@ -162,8 +155,10 @@ const ContinueQuiz = () => {
         parentScores={parentScores}
         childScores={childScores}
         onRestart={restart}
+        sessionKey={sessionKey}
         childName={childName}
         childGender={childGender}
+        childAge={childAge}
       />
     );
   }

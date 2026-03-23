@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import QuizLanding from "@/components/QuizLanding";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
@@ -32,7 +33,17 @@ const Index = () => {
         parentScores={quiz.parentScores}
         childName={quiz.childName}
         childGender={quiz.childGender}
+        childAge={quiz.childAge}
       />
+    );
+  }
+
+  if (quiz.phase === "persisting-results") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-4" style={{ background: "var(--gradient-hero)" }}>
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="font-display font-bold text-foreground text-center">Sonuçlarınız kaydediliyor…</p>
+      </div>
     );
   }
 
@@ -42,6 +53,7 @@ const Index = () => {
         parentScores={quiz.parentScores}
         childScores={quiz.childScores}
         onRestart={quiz.restart}
+        sessionKey={quiz.sessionKey ?? ""}
         childName={quiz.childName}
         childGender={quiz.childGender}
         childAge={quiz.childAge}

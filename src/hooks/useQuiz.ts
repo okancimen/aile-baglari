@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import quizData from "@/data/quiz-data.json";
+import { createQuizSession } from "@/lib/quiz-session";
 
 interface Question {
   id: string;
@@ -7,7 +8,14 @@ interface Question {
   soru: string;
 }
 
-type Phase = "landing" | "age-select" | "parent-quiz" | "parent-done" | "child-quiz" | "results";
+type Phase =
+  | "landing"
+  | "age-select"
+  | "parent-quiz"
+  | "parent-done"
+  | "child-quiz"
+  | "persisting-results"
+  | "results";
 
 function pickRandomPerCategory(questions: Question[], categories: string[]): Question[] {
   const selected: Question[] = [];
@@ -30,6 +38,7 @@ export function useQuiz() {
   const [childAge, setChildAge] = useState<number>(8);
   const [childName, setChildName] = useState<string>("");
   const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
+  const [sessionKey, setSessionKey] = useState<string | null>(null);
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
@@ -68,7 +77,28 @@ export function useQuiz() {
         setPhase("parent-done");
       } else if (phase === "child-quiz") {
         setChildScores(scores);
-        setPhase("results");
+        setCurrentIndex(0);
+        setAnswers({});
+        setPhase("persisting-results");
+        void (async () => {
+          try {
+            const row = await createQuizSession({
+              p_parent_scores: parentScores,
+              p_child_scores: scores,
+              p_child_name: childName,
+              p_child_gender: childGender,
+              p_child_age: childAge,
+              p_completed: true,
+            });
+            setSessionKey(row.session_key);
+          } catch (e) {
+            console.error("[ERROR] createQuizSession (completed):", e);
+            setSessionKey(null);
+          } finally {
+            setPhase("results");
+          }
+        })();
+        return;
       }
       setCurrentIndex(0);
       setAnswers({});
@@ -113,6 +143,7 @@ export function useQuiz() {
     setChildAge(8);
     setChildName("");
     setChildGender("boy");
+    setSessionKey(null);
   };
 
   return {
@@ -134,5 +165,6 @@ export function useQuiz() {
     childAge,
     childName,
     childGender,
+    sessionKey,
   };
 }
