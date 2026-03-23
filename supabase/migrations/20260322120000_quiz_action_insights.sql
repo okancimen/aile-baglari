@@ -53,6 +53,9 @@ $$;
 
 grant execute on function public.create_quiz_session(jsonb, text, text, text, jsonb, boolean, smallint) to anon, authenticated;
 
+-- OUT parametreleri değiştiği için CREATE OR REPLACE yeterli değil (42P13).
+drop function if exists public.get_quiz_session_by_key(text);
+
 -- Extend get_quiz_session_by_key for clients (ContinueQuiz)
 create or replace function public.get_quiz_session_by_key(p_session_key text)
 returns table (
@@ -90,3 +93,5 @@ begin
   limit 1;
 end;
 $$;
+
+grant execute on function public.get_quiz_session_by_key(text) to anon, authenticated;
