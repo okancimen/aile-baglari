@@ -1,5 +1,5 @@
 alter table public.quiz_sessions
-  alter column session_key set default encode(gen_random_bytes(16), 'hex');
+  alter column session_key set default encode(extensions.gen_random_bytes(16), 'hex');
 
 alter table public.quiz_sessions
   add column if not exists expires_at timestamptz not null default (now() + interval '7 days'),

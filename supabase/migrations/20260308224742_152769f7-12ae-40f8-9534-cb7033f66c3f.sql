@@ -1,9 +1,9 @@
--- gen_random_bytes() için (session_key varsayılanı)
+-- pgcrypto: Supabase’de genelde extensions şemasında; search_path her zaman kapsamaz.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE public.quiz_sessions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  session_key TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(6), 'hex'),
+  session_key TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(6), 'hex'),
   parent_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
   email TEXT,
   child_scores JSONB,
