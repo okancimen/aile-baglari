@@ -39,6 +39,7 @@ export function useQuiz() {
   const [childName, setChildName] = useState<string>("");
   const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [persistError, setPersistError] = useState<string | null>(null);
 
   const questions = useMemo(() => {
     if (phase === "parent-quiz") {
@@ -82,6 +83,7 @@ export function useQuiz() {
         setPhase("persisting-results");
         void (async () => {
           try {
+            setPersistError(null);
             const row = await createQuizSession({
               p_parent_scores: parentScores,
               p_child_scores: scores,
@@ -90,10 +92,22 @@ export function useQuiz() {
               p_child_age: childAge,
               p_completed: true,
             });
-            setSessionKey(row.session_key);
+            const key = typeof row.session_key === "string" ? row.session_key.trim() : "";
+            if (!key) {
+              throw new Error("API geçerli session_key döndürmedi.");
+            }
+            setSessionKey(key);
+            try {
+              const u = new URL(window.location.href);
+              u.searchParams.set("continue", key);
+              window.history.replaceState({}, "", u.toString());
+            } catch {
+              /* [WARNING] replaceState başarısız — sonuç ekranı yine de sessionKey state ile çalışır */
+            }
           } catch (e) {
             console.error("[ERROR] createQuizSession (completed):", e);
             setSessionKey(null);
+            setPersistError(e instanceof Error ? e.message : "Sonuçlar kaydedilemedi.");
           } finally {
             setPhase("results");
           }
@@ -144,6 +158,15 @@ export function useQuiz() {
     setChildName("");
     setChildGender("boy");
     setSessionKey(null);
+    setPersistError(null);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("continue");
+      const path = u.search ? `${u.pathname}${u.search}` : u.pathname;
+      window.history.replaceState({}, "", path);
+    } catch {
+      /* ignore */
+    }
   };
 
   return {
@@ -166,5 +189,6 @@ export function useQuiz() {
     childName,
     childGender,
     sessionKey,
+    persistError,
   };
 }
