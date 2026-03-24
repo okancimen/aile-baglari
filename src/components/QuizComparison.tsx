@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, Mail, X, Loader2, MessageSquareWarning } from "lucide-react";
 import { toast } from "sonner";
 import RadarChart3D from "./RadarChart3D";
-import { supabase } from "@/integrations/supabase/client";
+import { getEduentryApiBase } from "@/lib/eduentry-api";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
   childScores: Record<string, number>;
   onRestart: () => void;
-  /** quiz_sessions.session_key — Edge Function ile tek seferlik LLM + DB */
+  /** quiz_sessions.session_key — eduentry-api POST /api/quiz/ensure-action-plan */
   sessionKey: string;
   childName?: string;
   childGender?: "girl" | "boy";
@@ -127,18 +127,33 @@ const QuizComparison = ({
     setInsightsLoading(true);
     setInsightsError(false);
     void (async () => {
-      const { data, error } = await supabase.functions.invoke<{
+      let data: {
         category_order?: string[];
         insights?: { summary: string; actions: string[] }[];
         cached?: boolean;
-      }>("ensure-action-plan", { body: { session_key: key } });
-      if (cancelled) return;
-      if (error) {
-        console.error("[ERROR] ensure-action-plan invoke:", error);
+      } | null = null;
+      try {
+        const base = getEduentryApiBase();
+        const res = await fetch(`${base}/api/quiz/ensure-action-plan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_key: key }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.error("[ERROR] ensure-action-plan HTTP:", res.status, json);
+          setInsightsError(true);
+          setInsightsLoading(false);
+          return;
+        }
+        data = json as typeof data;
+      } catch (e) {
+        console.error("[ERROR] ensure-action-plan fetch:", e);
         setInsightsError(true);
         setInsightsLoading(false);
         return;
       }
+      if (cancelled) return;
       const order = data?.category_order;
       const insights = data?.insights;
       if (!order?.length || !insights?.length || order.length !== insights.length) {
@@ -496,15 +511,15 @@ const QuizComparison = ({
                             <p style="text-align: center; color: #999; font-size: 12px; margin-top: 16px;">EduBot - Ebeveyn-Çocuk Uyum Analizi</p>
                           </div>`;
 
-                      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-                      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/send-action-plan`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                      const base = getEduentryApiBase();
+                      const res = await fetch(`${base}/api/email/send`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                           to: email,
                           subject: `Ebeveyn Aksiyon Planı - Uyum Puanı %${compatibilityScore}`,
-                          htmlBody
-                        })
+                          htmlBody,
+                        }),
                       });
 
                       const data = await res.json();

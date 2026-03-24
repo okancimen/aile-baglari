@@ -2,8 +2,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Baby, CheckCircle, Mail, Loader2, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { createQuizSession } from "@/lib/quiz-session";
+import { getEduentryApiBase } from "@/lib/eduentry-api";
 
 interface ParentDoneProps {
   onStartChildQuiz: () => void;
@@ -44,9 +44,11 @@ const ParentDone = ({
 
       const continueUrl = `${window.location.origin}/?continue=${session.session_key}`;
 
-      // Send email with the link
-      const { error: fnError } = await supabase.functions.invoke("send-action-plan", {
-        body: {
+      const base = getEduentryApiBase();
+      const mailRes = await fetch(`${base}/api/email/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           to: email,
           subject: "EduBot - Çocuk Testi Devam Bağlantısı",
           htmlBody: `
@@ -68,10 +70,10 @@ const ParentDone = ({
               </p>
             </div>
           `,
-        },
+        }),
       });
-
-      if (fnError) throw fnError;
+      const mailJson = await mailRes.json().catch(() => ({}));
+      if (!mailRes.ok) throw new Error((mailJson as { error?: string }).error || `E-posta ${mailRes.status}`);
 
       setSent(true);
       toast.success("Devam bağlantısı e-postanıza gönderildi!");
