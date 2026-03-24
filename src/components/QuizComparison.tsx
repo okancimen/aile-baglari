@@ -1,10 +1,8 @@
-// 3D Radar Chart version
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, TrendingUp, TrendingDown, Minus, Lightbulb, Mail, X, Loader2, MessageSquareWarning } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { RotateCcw, Lightbulb, Loader2, Mail, MessageSquareWarning } from "lucide-react";
 import RadarChart3D from "./RadarChart3D";
-import { getEduentryApiBase } from "@/lib/eduentry-api";
+import { enqueueActionJob } from "@/lib/quiz-session";
 
 interface QuizComparisonProps {
   parentScores: Record<string, number>;
@@ -15,14 +13,6 @@ interface QuizComparisonProps {
   childName?: string;
   childGender?: "girl" | "boy";
   childAge?: number;
-}
-
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 const categoryLabels: Record<string, string> = {
@@ -88,13 +78,10 @@ const QuizComparison = ({
 }: QuizComparisonProps) => {
   const genderEmoji = childGender === "girl" ? "👧" : "👦";
   const displayName = childName || "Çocuk";
-  const categories = Object.keys(categoryLabels);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [generatedInsights, setGeneratedInsights] = useState<Record<string, { summary: string; actions: string[] }> | null>(null);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-  const [insightsError, setInsightsError] = useState(false);
+  const categories = useMemo(() => Object.keys(categoryLabels), []);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [jobAccepted, setJobAccepted] = useState(false);
   const compatibilityScore = calculateCompatibilityScore(
     categories,
     parentScores,
@@ -110,7 +97,6 @@ const QuizComparison = ({
 
   const compat = getCompatLabel(compatibilityScore);
 
-  // Find top 3 categories with biggest difference for action plan
   const sortedByDiff = [...categories].sort((a, b) => {
     const diffA = Math.abs((parentScores[a] || 3) - (childScores[a] || 3));
     const diffB = Math.abs((parentScores[b] || 3) - (childScores[b] || 3));
@@ -120,72 +106,32 @@ const QuizComparison = ({
   useEffect(() => {
     const key = sessionKey?.trim();
     if (!key) {
-      setInsightsError(true);
+      setJobError("Oturum anahtarı eksik olduğu için iş kuyruğa alınamadı.");
       return;
     }
     let cancelled = false;
-    setInsightsLoading(true);
-    setInsightsError(false);
+    setJobLoading(true);
+    setJobError(null);
     void (async () => {
-      let data: {
-        category_order?: string[];
-        insights?: { summary: string; actions: string[] }[];
-        cached?: boolean;
-      } | null = null;
       try {
-        const base = getEduentryApiBase();
-        const res = await fetch(`${base}/api/quiz/ensure-action-plan`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_key: key }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          console.error("[ERROR] ensure-action-plan HTTP:", res.status, json);
-          setInsightsError(true);
-          setInsightsLoading(false);
-          return;
-        }
-        data = json as typeof data;
+        const res = await enqueueActionJob(key);
+        if (cancelled) return;
+        setJobAccepted(true);
+        setJobLoading(false);
+        console.info("[INFO] action-job enqueue done", res);
       } catch (e) {
-        console.error("[ERROR] ensure-action-plan fetch:", e);
-        setInsightsError(true);
-        setInsightsLoading(false);
-        return;
+        if (cancelled) return;
+        setJobAccepted(false);
+        setJobLoading(false);
+        const msg = e instanceof Error ? e.message : "Aksiyon planı işi kuyruğa alınamadı.";
+        setJobError(msg);
+        console.error("[ERROR] action-job enqueue:", e);
       }
-      if (cancelled) return;
-      const order = data?.category_order;
-      const insights = data?.insights;
-      if (!order?.length || !insights?.length || order.length !== insights.length) {
-        setInsightsError(true);
-        setInsightsLoading(false);
-        return;
-      }
-      const next: Record<string, { summary: string; actions: string[] }> = {};
-      order.forEach((cat, i) => {
-        const item = insights[i];
-        if (item && typeof item.summary === "string" && Array.isArray(item.actions)) {
-          next[cat] = { summary: item.summary, actions: item.actions.slice(0, 2) };
-        }
-      });
-      if (Object.keys(next).length !== order.length) {
-        setInsightsError(true);
-        setInsightsLoading(false);
-        return;
-      }
-      setGeneratedInsights(next);
-      setInsightsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [sessionKey]);
-
-  const insightsReady =
-    !insightsLoading &&
-    !insightsError &&
-    generatedInsights !== null &&
-    categories.every((c) => Boolean(generatedInsights![c]));
 
   if (!sessionKey?.trim()) {
     return (
@@ -193,7 +139,7 @@ const QuizComparison = ({
         <div className="max-w-md text-center bg-card rounded-2xl p-8 shadow-lg">
           <MessageSquareWarning className="w-10 h-10 mx-auto mb-3 text-destructive" />
           <p className="font-display font-bold text-foreground mb-2">Oturum anahtarı eksik</p>
-          <p className="text-sm text-muted-foreground font-body">Aksiyon planı yüklenemiyor. Lütfen testi yeniden tamamlayın.</p>
+          <p className="text-sm text-muted-foreground font-body">Aksiyon planı işi başlatılamadı. Lütfen testi yeniden tamamlayın.</p>
           <button
             type="button"
             onClick={onRestart}
@@ -256,7 +202,7 @@ const QuizComparison = ({
           
         </div>
 
-        {/* Email CTA - Detaylı sonuçlar için */}
+        {/* Job CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -266,11 +212,11 @@ const QuizComparison = ({
           
           <Mail className="w-8 h-8 mx-auto mb-2 text-primary" />
           <p className="font-display font-bold text-card-foreground mb-1">
-            Detaylı Sonuçlarınızı Görmek İster Misiniz?
+            Aksiyonlar E-posta ile İletilecek
           </p>
           <p className="text-sm text-muted-foreground font-body leading-relaxed">
-            Tüm kategorilerdeki puanlarınız, karşılaştırmalar ve size özel tüm öneriler e-posta adresinize gönderilsin.
-            Aşağıdaki aksiyon planı bir özettir; detayları e-posta ile alabilirsiniz.
+            Anket tamamlandıktan sonra aksiyon planı üretimi arka planda başlatılır.
+            Aksiyonlarınız size e-posta olarak birazdan iletilecektir.
           </p>
         </motion.div>
 
@@ -290,262 +236,65 @@ const QuizComparison = ({
             </h2>
           </div>
           <p className="text-sm text-muted-foreground font-body mb-6">
-            Sonuçlarınıza göre en çok dikkat gerektiren alanlar ve size özel öneriler:
+            Sonuçlarınıza göre en çok dikkat gerektiren alanlar aşağıdadır.
           </p>
 
-          {insightsLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mb-4">
+          {jobLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mb-4 rounded-xl border border-border bg-card p-3">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Önerileriniz hazırlanıyor…
+              Aksiyon planı işi sıraya alınıyor…
             </div>
           )}
-          {insightsError && !insightsLoading && (
+          {jobAccepted && !jobLoading && (
+            <div className="flex items-start gap-2 text-sm text-emerald-700 font-body mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
+              <Mail className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>Aksiyonlarınız hazırlanıyor, birazdan e-posta olarak iletilecektir.</span>
+            </div>
+          )}
+          {jobError && !jobLoading && (
             <div className="flex items-start gap-2 text-sm text-destructive font-body mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
               <MessageSquareWarning className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>Aksiyon planı yüklenemedi. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</span>
+              <span>Aksiyon planı işleme alınamadı: {jobError}</span>
             </div>
           )}
 
-          <div className="relative">
-            <div className="grid gap-5">
-              {sortedByDiff.slice(0, 3).map((cat, i) => {
-                const p = parentScores[cat] || 3;
-                const c = childScores[cat] || 3;
-                const diff = p - c;
-                const absDiff = Math.abs(diff);
-                const generated = generatedInsights?.[cat];
-                const summary = generated?.summary ?? "";
-                const displayActions = generated?.actions ?? [];
-
-                const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
-                const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
-
-                return (
-                  <motion.div
-                    key={cat}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + i * 0.08 }}
-                    className="bg-card rounded-2xl p-5"
-                    style={{ boxShadow: "var(--shadow-card)" }}>
-                    
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-xl">{categoryEmojis[cat]}</span>
-                      <span className="font-display font-bold text-card-foreground flex-1">
-                        {categoryLabels[cat]}
-                      </span>
-                      <span
-                        className="text-xs font-body font-semibold px-2 py-1 rounded-full"
-                        style={{ background: urgencyColor, color: "white" }}>
-                        
-                        {urgency}
-                      </span>
-                    </div>
-
-                    {/* Açıklayıcı paragraf */}
-                    <p className="text-sm font-body text-muted-foreground mb-4 leading-relaxed">
-                      {summary}
-                    </p>
-
-                    <ul className="space-y-2">
-                      {displayActions.map((action, j) =>
-                      <li key={j} className="flex items-start gap-2 text-sm font-body text-card-foreground">
-                          <span className="text-primary mt-0.5 shrink-0">✦</span>
-                          <span>{action}</span>
-                        </li>
-                      )}
-                    </ul>
-                  </motion.div>);
-
-              })}
-            </div>
-
-            {/* Blur overlay after first card */}
-            <div
-              className="absolute inset-x-0 bottom-0 pointer-events-none"
-              style={{
-                top: "18%",
-                background: "linear-gradient(to bottom, transparent 0%, hsl(var(--background) / 0.7) 25%, hsl(var(--background) / 0.95) 55%, hsl(var(--background)) 80%)",
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)"
-              }} />
-            
-
-            {/* CTA over blur */}
-            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-4 pt-16 z-10">
-              <p className="font-display font-bold text-foreground text-sm mb-3 text-center">
-                Tüm önerileri görmek için e-posta ile alın 👇
-              </p>
-              <button
-                type="button"
-                disabled={!insightsReady}
-                onClick={() => insightsReady && setShowEmailModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-display font-bold text-primary-foreground transition-all hover:scale-105 disabled:opacity-50 disabled:pointer-events-none"
-                style={{ background: "var(--gradient-cool)", boxShadow: "var(--shadow-elevated)" }}>
-                
-                <Mail className="w-5 h-5" />
-                Aksiyon Planını E-posta ile Gönder
-              </button>
-            </div>
-          </div>
-
-          {/* Email Modal */}
-          <AnimatePresence>
-            {showEmailModal &&
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center px-4"
-              style={{ background: "rgba(0,0,0,0.5)" }}
-              onClick={() => !sending && setShowEmailModal(false)}>
-              
+          <div className="grid gap-5">
+            {sortedByDiff.slice(0, 3).map((cat, i) => {
+              const p = parentScores[cat] || 3;
+              const c = childScores[cat] || 3;
+              const diff = p - c;
+              const absDiff = Math.abs(diff);
+              const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
+              const urgencyColor = absDiff >= 2 ? "hsl(25, 95%, 55%)" : absDiff === 1 ? "hsl(45, 90%, 50%)" : "hsl(150, 60%, 40%)";
+              const directionText =
+                diff > 0
+                  ? "Ebeveyn beklentisi çocuk skorundan daha yüksek."
+                  : diff < 0
+                    ? "Çocuk eğilimi ebeveyn beklentisinden daha yüksek."
+                    : "Ebeveyn ve çocuk skorları uyumlu.";
+              return (
                 <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-card rounded-2xl p-6 w-full max-w-md"
-                style={{ boxShadow: "var(--shadow-elevated)" }}
-                onClick={(e) => e.stopPropagation()}>
-                
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-display font-bold text-lg text-card-foreground">
-                      Aksiyon Planını Gönder
-                    </h3>
-                    <button onClick={() => !sending && setShowEmailModal(false)} className="text-muted-foreground hover:text-foreground">
-                      <X className="w-5 h-5" />
-                    </button>
+                  key={cat}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.8 + i * 0.08 }}
+                  className="bg-card rounded-2xl p-5"
+                  style={{ boxShadow: "var(--shadow-card)" }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-xl">{categoryEmojis[cat]}</span>
+                    <span className="font-display font-bold text-card-foreground flex-1">{categoryLabels[cat]}</span>
+                    <span className="text-xs font-body font-semibold px-2 py-1 rounded-full" style={{ background: urgencyColor, color: "white" }}>
+                      {urgency}
+                    </span>
                   </div>
-                  <p className="text-sm text-muted-foreground font-body mb-4">
-                    Aksiyon planınız girdiğiniz e-posta adresine gönderilecektir.
+                  <p className="text-sm font-body text-muted-foreground leading-relaxed">
+                    Ebeveyn: {p}/5 - {displayName}: {c}/5. {directionText}
                   </p>
-                  <input
-                  type="email"
-                  placeholder="E-posta adresiniz"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground font-body mb-4 outline-none focus:ring-2 focus:ring-primary"
-                  disabled={sending} />
-                
-                  <button
-                  onClick={async () => {
-                    if (!email || !email.includes('@')) {
-                      toast.error('Lütfen geçerli bir e-posta adresi girin.');
-                      return;
-                    }
-                    setSending(true);
-                    try {
-                      if (!insightsReady || !generatedInsights) {
-                        toast.error("Aksiyon planı henüz hazır değil.");
-                        return;
-                      }
-                      const top3 = sortedByDiff.slice(0, 3);
-                      const gi = generatedInsights;
-                      let htmlBody = `
-                          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                            <h1 style="text-align: center; color: #333;">Ebeveyn-Çocuk Uyum Analizi</h1>
-                            <div style="text-align: center; background: ${compat.color}; color: white; padding: 15px; border-radius: 12px; margin: 16px 0;">
-                              <span style="font-size: 28px; font-weight: bold;">%${compatibilityScore}</span>
-                              <br/>${escHtml(compat.text)}
-                            </div>
-
-                            <div style="background: #e8f5e9; border-radius: 12px; padding: 16px; margin: 18px 0 24px;">
-                              <h3 style="color: #2e7d32; margin-top: 0;">🔄 Düzenli Takip Önemlidir!</h3>
-                              <p style="color: #444; font-size: 14px; line-height: 1.6; margin: 0;">
-                                Çocuğunuzun gelişimi dinamik bir süreçtir ve zaman içinde değişim gösterebilir. Aksiyon planınızı uyguladıkça,
-                                hem sizin beklentileriniz hem de çocuğunuzun tepkileri farklılaşabilir. Bu nedenle, <strong>her 2-4 haftada bir bu testi
-                                tekrar yapmanızı</strong> öneriyoruz. Düzenli takip, gelişimi somut olarak gözlemlemenize ve yeni odak noktaları belirlemenize
-                                yardımcı olur.
-                              </p>
-                            </div>
-
-                            <h2 style="color: #333;">Tüm Kategoriler - Özet (LLM)</h2>`;
-
-                      categories.forEach((cat) => {
-                        const p = parentScores[cat] || 3;
-                        const c = childScores[cat] || 3;
-                        const diff = p - c;
-                        const absDiff = Math.abs(diff);
-                        const row = gi[cat];
-                        const insightText = row?.summary ? escHtml(row.summary) : "";
-
-                        const urgency = absDiff >= 2 ? "Öncelikli" : absDiff === 1 ? "İyileştirilebilir" : "Uyumlu";
-                        const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
-
-                        htmlBody += `
-                            <div style="background: #f9f9f9; border-radius: 12px; padding: 16px; margin: 12px 0;">
-                              <div style="margin-bottom: 8px;">
-                                <span style="font-size: 20px;">${categoryEmojis[cat]}</span>
-                                <strong>${escHtml(categoryLabels[cat])}</strong>
-                                <span style="background: ${urgencyColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">${urgency}</span>
-                              </div>
-                              <div style="font-size: 13px; color: #666; margin-bottom: 6px;">Ebeveyn: ${p}/5 | Çocuk: ${c}/5</div>
-                              <div style="font-size: 13px; color: #555; font-style: italic;">${insightText}</div>
-                            </div>`;
-                      });
-
-                      htmlBody += `<h2 style="color: #333; margin-top: 24px;">🎯 Öncelikli Aksiyon Planı (İlk 3 Alan)</h2>`;
-                      top3.forEach((cat) => {
-                        const p = parentScores[cat] || 3;
-                        const c = childScores[cat] || 3;
-                        const diff = p - c;
-                        const absDiff = Math.abs(diff);
-                        const actions = (gi[cat]?.actions ?? []).slice(0, 2).map((a) => escHtml(a));
-                        const urgencyColor = absDiff >= 2 ? "#e86830" : absDiff === 1 ? "#d4a017" : "#3d9970";
-
-                        htmlBody += `
-                            <div style="background: #fff3e0; border-left: 4px solid ${urgencyColor}; border-radius: 8px; padding: 14px; margin: 10px 0;">
-                              <strong>${categoryEmojis[cat]} ${escHtml(categoryLabels[cat])}</strong>
-                              <p style="font-size: 13px; color: #555; margin: 8px 0 4px; font-style: italic;">${escHtml(gi[cat]?.summary ?? "")}</p>
-                              <ul style="margin: 8px 0 0; padding-left: 20px;">
-                                ${actions.map((a) => `<li style="margin-bottom: 4px; font-size: 14px;">${a}</li>`).join("")}
-                              </ul>
-                            </div>`;
-                      });
-
-
-                      htmlBody += `
-                            <div style="text-align: center; margin-top: 24px; padding: 16px; background: #f0f7ff; border-radius: 12px;">
-                              <p style="color: #555; font-size: 14px;">Her çocuk benzersizdir. Küçük adımlarla büyük değişimler yaratabilirsiniz! 💛</p>
-                            </div>
-                            <p style="text-align: center; color: #999; font-size: 12px; margin-top: 16px;">EduBot - Ebeveyn-Çocuk Uyum Analizi</p>
-                          </div>`;
-
-                      const base = getEduentryApiBase();
-                      const res = await fetch(`${base}/api/email/send`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          to: email,
-                          subject: `Ebeveyn Aksiyon Planı - Uyum Puanı %${compatibilityScore}`,
-                          htmlBody,
-                        }),
-                      });
-
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || 'Gönderim başarısız');
-
-                      toast.success('Aksiyon planı e-posta adresinize gönderildi!');
-                      setShowEmailModal(false);
-                      setEmail('');
-                    } catch (err: any) {
-                      console.error('Email send error:', err);
-                      toast.error('E-posta gönderilemedi: ' + (err.message || 'Bilinmeyen hata'));
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                  disabled={sending || !insightsReady}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
-                  style={{ background: "var(--gradient-cool)" }}>
-                  
-                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
-                    {sending ? 'Gönderiliyor...' : 'Gönder'}
-                  </button>
                 </motion.div>
-              </motion.div>
-            }
-          </AnimatePresence>
+              );
+            })}
+          </div>
         </motion.div>
 
         {/* Closing note */}

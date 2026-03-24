@@ -27,6 +27,13 @@ type QuizSessionRow = {
   } | null;
 };
 
+type EnqueueActionJobResponse = {
+  job_id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  already_exists: boolean;
+  message?: string | null;
+};
+
 function buildError(status: number, json: unknown, fallback: string): Error {
   const detail =
     typeof json === "object" && json !== null && "detail" in json
@@ -74,4 +81,18 @@ export const completeQuizSessionByKey = async (
     throw buildError(res.status, json, "Quiz session could not be completed.");
   }
   return json as { id: string; email: string | null; session_key: string };
+};
+
+export const enqueueActionJob = async (sessionKey: string): Promise<EnqueueActionJobResponse> => {
+  const base = getEduentryApiBase();
+  const res = await fetch(`${base}/api/quiz/action-jobs/enqueue`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_key: sessionKey }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw buildError(res.status, json, "Action job could not be enqueued.");
+  }
+  return json as EnqueueActionJobResponse;
 };
