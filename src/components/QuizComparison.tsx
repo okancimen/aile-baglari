@@ -43,6 +43,7 @@ const categoryEmojis: Record<string, string> = {
 
 const MAX_CATEGORY_DIFF = 4;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+const ENQUEUE_DONE_KEY_PREFIX = "action-job-enqueued";
 
 function calculateCompatibilityScore(
   categories: string[],
@@ -109,12 +110,25 @@ const QuizComparison = ({
   useEffect(() => {
     if (!sessionKey?.trim()) {
       setJobError("Oturum anahtarı eksik olduğu için iş kuyruğa alınamadı.");
+      return;
+    }
+    try {
+      const key = sessionKey.trim();
+      const done = window.sessionStorage.getItem(`${ENQUEUE_DONE_KEY_PREFIX}:${key}`) === "1";
+      if (done) {
+        setJobAccepted(true);
+      }
+    } catch {
+      /* ignore storage failures */
     }
   }, [sessionKey]);
 
   const emailError = emailTouched && !EMAIL_RE.test(email.trim()) ? "Geçerli bir e-posta adresi girin." : "";
 
   const handleEnqueue = async () => {
+    if (enqueuePending || jobAccepted) {
+      return;
+    }
     const key = sessionKey?.trim();
     const normalizedEmail = email.trim().toLowerCase();
     setEmailTouched(true);
@@ -132,6 +146,11 @@ const QuizComparison = ({
     try {
       const res = await enqueueActionJob(key, normalizedEmail);
       setJobAccepted(true);
+      try {
+        window.sessionStorage.setItem(`${ENQUEUE_DONE_KEY_PREFIX}:${key}`, "1");
+      } catch {
+        /* ignore storage failures */
+      }
       console.info("[INFO] action-job enqueue done", res);
     } catch (e) {
       setJobAccepted(false);
@@ -227,34 +246,40 @@ const QuizComparison = ({
           <p className="text-sm text-muted-foreground font-body leading-relaxed mb-4">
             E-posta adresinizi girin. Aksiyon planını bu adrese hazırlayıp birazdan ileteceğiz.
           </p>
-          <div className="max-w-md mx-auto text-left">
-            <label htmlFor="action-email" className="block text-xs font-body text-muted-foreground mb-2">
-              E-posta adresiniz
-            </label>
-            <input
-              id="action-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setEmailTouched(true)}
-              placeholder="ornek@domain.com"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground font-body outline-none focus:ring-2 focus:ring-primary"
-              disabled={enqueuePending}
-            />
-            {emailError ? (
-              <p className="mt-2 text-xs text-destructive font-body">{emailError}</p>
-            ) : null}
-            <button
-              type="button"
-              onClick={handleEnqueue}
-              disabled={enqueuePending}
-              className="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
-              style={{ background: "var(--gradient-cool)" }}
-            >
-              {enqueuePending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-              Aksiyon planını mail adresime gönder
-            </button>
-          </div>
+          {!jobAccepted ? (
+            <div className="max-w-md mx-auto text-left">
+              <label htmlFor="action-email" className="block text-xs font-body text-muted-foreground mb-2">
+                E-posta adresiniz
+              </label>
+              <input
+                id="action-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="ornek@domain.com"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground font-body outline-none focus:ring-2 focus:ring-primary"
+                disabled={enqueuePending || jobAccepted}
+              />
+              {emailError ? (
+                <p className="mt-2 text-xs text-destructive font-body">{emailError}</p>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleEnqueue}
+                disabled={enqueuePending || jobAccepted}
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
+                style={{ background: "var(--gradient-cool)" }}
+              >
+                {enqueuePending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                Aksiyon planını mail adresime gönder
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-md mx-auto rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 font-body">
+              Talebiniz alındı. Aksiyon planınız e-posta adresinize iletilecek.
+            </div>
+          )}
         </motion.div>
 
         {/* ACTION PLAN SECTION */}
