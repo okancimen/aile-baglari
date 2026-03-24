@@ -42,6 +42,7 @@ const categoryEmojis: Record<string, string> = {
 };
 
 const MAX_CATEGORY_DIFF = 4;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
 function calculateCompatibilityScore(
   categories: string[],
@@ -79,7 +80,9 @@ const QuizComparison = ({
   const genderEmoji = childGender === "girl" ? "👧" : "👦";
   const displayName = childName || "Çocuk";
   const categories = useMemo(() => Object.keys(categoryLabels), []);
-  const [jobLoading, setJobLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [enqueuePending, setEnqueuePending] = useState(false);
   const [jobError, setJobError] = useState<string | null>(null);
   const [jobAccepted, setJobAccepted] = useState(false);
   const compatibilityScore = calculateCompatibilityScore(
@@ -104,34 +107,41 @@ const QuizComparison = ({
   });
 
   useEffect(() => {
-    const key = sessionKey?.trim();
-    if (!key) {
+    if (!sessionKey?.trim()) {
       setJobError("Oturum anahtarı eksik olduğu için iş kuyruğa alınamadı.");
+    }
+  }, [sessionKey]);
+
+  const emailError = emailTouched && !EMAIL_RE.test(email.trim()) ? "Geçerli bir e-posta adresi girin." : "";
+
+  const handleEnqueue = async () => {
+    const key = sessionKey?.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    setEmailTouched(true);
+    if (!key) {
+      setJobError("Oturum anahtarı eksik.");
       return;
     }
-    let cancelled = false;
-    setJobLoading(true);
+    if (!EMAIL_RE.test(normalizedEmail)) {
+      setJobError("Geçerli bir e-posta adresi girin.");
+      return;
+    }
     setJobError(null);
-    void (async () => {
-      try {
-        const res = await enqueueActionJob(key);
-        if (cancelled) return;
-        setJobAccepted(true);
-        setJobLoading(false);
-        console.info("[INFO] action-job enqueue done", res);
-      } catch (e) {
-        if (cancelled) return;
-        setJobAccepted(false);
-        setJobLoading(false);
-        const msg = e instanceof Error ? e.message : "Aksiyon planı işi kuyruğa alınamadı.";
-        setJobError(msg);
-        console.error("[ERROR] action-job enqueue:", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionKey]);
+    setEnqueuePending(true);
+    setJobAccepted(false);
+    try {
+      const res = await enqueueActionJob(key, normalizedEmail);
+      setJobAccepted(true);
+      console.info("[INFO] action-job enqueue done", res);
+    } catch (e) {
+      setJobAccepted(false);
+      const msg = e instanceof Error ? e.message : "Aksiyon planı işi kuyruğa alınamadı.";
+      setJobError(msg);
+      console.error("[ERROR] action-job enqueue:", e);
+    } finally {
+      setEnqueuePending(false);
+    }
+  };
 
   if (!sessionKey?.trim()) {
     return (
@@ -214,10 +224,37 @@ const QuizComparison = ({
           <p className="font-display font-bold text-card-foreground mb-1">
             Aksiyonlar E-posta ile İletilecek
           </p>
-          <p className="text-sm text-muted-foreground font-body leading-relaxed">
-            Anket tamamlandıktan sonra aksiyon planı üretimi arka planda başlatılır.
-            Aksiyonlarınız size e-posta olarak birazdan iletilecektir.
+          <p className="text-sm text-muted-foreground font-body leading-relaxed mb-4">
+            E-posta adresinizi girin. Aksiyon planını bu adrese hazırlayıp birazdan ileteceğiz.
           </p>
+          <div className="max-w-md mx-auto text-left">
+            <label htmlFor="action-email" className="block text-xs font-body text-muted-foreground mb-2">
+              E-posta adresiniz
+            </label>
+            <input
+              id="action-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailTouched(true)}
+              placeholder="ornek@domain.com"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground font-body outline-none focus:ring-2 focus:ring-primary"
+              disabled={enqueuePending}
+            />
+            {emailError ? (
+              <p className="mt-2 text-xs text-destructive font-body">{emailError}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleEnqueue}
+              disabled={enqueuePending}
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-display font-bold text-primary-foreground transition-all disabled:opacity-60"
+              style={{ background: "var(--gradient-cool)" }}
+            >
+              {enqueuePending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              Aksiyon planını mail adresime gönder
+            </button>
+          </div>
         </motion.div>
 
         {/* ACTION PLAN SECTION */}
@@ -239,19 +276,19 @@ const QuizComparison = ({
             Sonuçlarınıza göre en çok dikkat gerektiren alanlar aşağıdadır.
           </p>
 
-          {jobLoading && (
+          {enqueuePending && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mb-4 rounded-xl border border-border bg-card p-3">
               <Loader2 className="w-4 h-4 animate-spin" />
               Aksiyon planı işi sıraya alınıyor…
             </div>
           )}
-          {jobAccepted && !jobLoading && (
+          {jobAccepted && !enqueuePending && (
             <div className="flex items-start gap-2 text-sm text-emerald-700 font-body mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
               <Mail className="w-4 h-4 shrink-0 mt-0.5" />
               <span>Aksiyonlarınız hazırlanıyor, birazdan e-posta olarak iletilecektir.</span>
             </div>
           )}
-          {jobError && !jobLoading && (
+          {jobError && !enqueuePending && (
             <div className="flex items-start gap-2 text-sm text-destructive font-body mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
               <MessageSquareWarning className="w-4 h-4 shrink-0 mt-0.5" />
               <span>Aksiyon planı işleme alınamadı: {jobError}</span>

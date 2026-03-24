@@ -83,12 +83,12 @@ export const completeQuizSessionByKey = async (
   return json as { id: string; email: string | null; session_key: string };
 };
 
-export const enqueueActionJob = async (sessionKey: string): Promise<EnqueueActionJobResponse> => {
+export const enqueueActionJob = async (sessionKey: string, email: string): Promise<EnqueueActionJobResponse> => {
   const base = getEduentryApiBase();
   const res = await fetch(`${base}/api/quiz/action-jobs/enqueue`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session_key: sessionKey }),
+    body: JSON.stringify({ session_key: sessionKey, email }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
