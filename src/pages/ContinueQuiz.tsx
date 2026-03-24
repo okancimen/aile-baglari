@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { completeQuizSessionByKey, getQuizSessionByKey } from "@/lib/quiz-session";
-import type { Json } from "@/integrations/supabase/types";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
 import { motion } from "framer-motion";
@@ -54,19 +53,19 @@ const ContinueQuiz = () => {
       try {
         const row = await getQuizSessionByKey(sessionKey);
         if (row.completed) {
-          setParentScores(row.parent_scores as Record<string, number>);
-          setChildScores((row.child_scores as Record<string, number>) || {});
+          setParentScores(row.parent_scores || {});
+          setChildScores(row.child_scores || {});
           setChildName(row.child_name || "");
-          setChildGender((row.child_gender as "girl" | "boy") || "boy");
+          setChildGender(row.child_gender || "boy");
           setChildAge(row.child_age ?? undefined);
           setPhase("results");
           setLoading(false);
           return;
         }
 
-        setParentScores(row.parent_scores as Record<string, number>);
+        setParentScores(row.parent_scores || {});
         setChildName(row.child_name || "");
-        setChildGender((row.child_gender as "girl" | "boy") || "boy");
+        setChildGender(row.child_gender || "boy");
         setChildAge(row.child_age ?? undefined);
         const childQuestions = pickRandomPerCategory(
           quizData.cocuk_testi as Question[],
@@ -102,7 +101,7 @@ const ContinueQuiz = () => {
       setChildScores(scores);
 
       try {
-        await completeQuizSessionByKey(sessionKey, scores as Json);
+        await completeQuizSessionByKey(sessionKey, scores);
         setPhase("results");
       } catch (e) {
         console.error("[ERROR] completeQuizSessionByKey:", e);
