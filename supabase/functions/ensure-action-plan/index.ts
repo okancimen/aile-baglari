@@ -137,14 +137,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const existing = row.action_insights as StoredInsights | null;
-    if (existing?.insights?.length && existing.category_order?.length) {
-      console.info("[INFO] ensure-action-plan cache hit key=%s insights=%s", session_key, existing.insights.length);
-      return new Response(
-        JSON.stringify({ cached: true, ...existing }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // Cache read disabled intentionally: always regenerate action plan from LLM.
+    console.info("[INFO] ensure-action-plan cache bypass key=%s", session_key);
 
     const parentScores = (row.parent_scores || {}) as Record<string, number>;
     const childScores = (row.child_scores || {}) as Record<string, number>;
