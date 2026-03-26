@@ -8,7 +8,7 @@ interface QuizComparisonProps {
   parentScores: Record<string, number>;
   childScores: Record<string, number>;
   onRestart: () => void;
-  /** quiz_sessions.session_key — eduentry-api POST /api/quiz/ensure-action-plan */
+  /** quiz_sessions.session_key — eduentry-api POST /api/quiz/action-jobs/enqueue */
   sessionKey: string;
   childName?: string;
   childGender?: "girl" | "boy";

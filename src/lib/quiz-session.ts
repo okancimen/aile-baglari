@@ -20,10 +20,15 @@ type QuizSessionRow = {
   child_age: number | null;
   completed: boolean;
   expires_at: string | null;
-  action_insights: {
-    category_order: string[];
-    insights: { summary: string; actions: string[] }[];
+  action_plan: {
+    id: string;
     generated_at: string;
+    items: {
+      category_key: string;
+      summary: string;
+      actions: string[];
+      item_order: number;
+    }[];
   } | null;
 };
 
