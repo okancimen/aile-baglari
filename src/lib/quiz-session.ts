@@ -57,6 +57,32 @@ function buildError(status: number, json: unknown, fallback: string): Error {
   return new Error(`${detail} (HTTP ${status})`);
 }
 
+function isNetworkFetchFailure(message: string): boolean {
+  return (
+    message === "Failed to fetch" ||
+    message.includes("NetworkError") ||
+    message.includes("Load failed") ||
+    message.includes("network error")
+  );
+}
+
+/** Tarayıcı ağ/TLS/CORS kaynaklı fetch reddini Türkçe mesaja çevirir; teşhis için apiBase loglanır. */
+async function fetchWithMappedNetworkError(url: string, init: RequestInit | undefined, apiBase: string): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (isNetworkFetchFailure(msg)) {
+      console.warn("[WARNING] eduentry-api fetch network failure", { apiBase, path: new URL(url).pathname, browserMessage: msg });
+      throw new Error(
+        `Sunucuya ulaşılamadı (${apiBase}). Ağ, TLS, güvenlik duvarı veya API kapalı olabilir; üretimde VITE_EDUENTRY_API_URL build sırasında doğru tanımlanmalı. (Tarayıcı: ${msg})`
+      );
+    }
+    console.error("[ERROR] eduentry-api fetch unexpected", { apiBase, browserMessage: msg });
+    throw e instanceof Error ? e : new Error(msg);
+  }
+}
+
 function normalizeQuestions(raw: unknown): QuizQuestionItem[] {
   if (!Array.isArray(raw)) return [];
   const out: QuizQuestionItem[] = [];
@@ -79,15 +105,19 @@ export const generateQuizQuestions = async (body: {
   child_gender?: "girl" | "boy";
 }): Promise<{ parent: QuizQuestionItem[]; child: QuizQuestionItem[] }> => {
   const base = getEduentryApiBase();
-  const res = await fetch(`${base}/api/quiz/generate-questions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      child_name: body.child_name ?? null,
-      child_age: body.child_age ?? null,
-      child_gender: body.child_gender ?? null,
-    }),
-  });
+  const res = await fetchWithMappedNetworkError(
+    `${base}/api/quiz/generate-questions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        child_name: body.child_name ?? null,
+        child_age: body.child_age ?? null,
+        child_gender: body.child_gender ?? null,
+      }),
+    },
+    base
+  );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw buildError(res.status, json, "Sorular üretilemedi.");
@@ -101,11 +131,15 @@ export const generateQuizQuestions = async (body: {
 
 export const createQuizSession = async (payload: CreateQuizSessionPayload): Promise<{ id: string; session_key: string; email: string | null }> => {
   const base = getEduentryApiBase();
-  const res = await fetch(`${base}/api/quiz/sessions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const res = await fetchWithMappedNetworkError(
+    `${base}/api/quiz/sessions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    base
+  );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw buildError(res.status, json, "Quiz session could not be created.");
@@ -115,7 +149,7 @@ export const createQuizSession = async (payload: CreateQuizSessionPayload): Prom
 
 export const getQuizSessionByKey = async (sessionKey: string): Promise<QuizSessionRow> => {
   const base = getEduentryApiBase();
-  const res = await fetch(`${base}/api/quiz/sessions/${encodeURIComponent(sessionKey)}`);
+  const res = await fetchWithMappedNetworkError(`${base}/api/quiz/sessions/${encodeURIComponent(sessionKey)}`, undefined, base);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw buildError(res.status, json, "Quiz session not found.");
@@ -128,11 +162,15 @@ export const completeQuizSessionByKey = async (
   childScores: Record<string, number>
 ): Promise<{ id: string; email: string | null; session_key: string }> => {
   const base = getEduentryApiBase();
-  const res = await fetch(`${base}/api/quiz/sessions/${encodeURIComponent(sessionKey)}/complete`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ p_child_scores: childScores }),
-  });
+  const res = await fetchWithMappedNetworkError(
+    `${base}/api/quiz/sessions/${encodeURIComponent(sessionKey)}/complete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ p_child_scores: childScores }),
+    },
+    base
+  );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw buildError(res.status, json, "Quiz session could not be completed.");
@@ -142,11 +180,15 @@ export const completeQuizSessionByKey = async (
 
 export const enqueueActionJob = async (sessionKey: string, email: string): Promise<EnqueueActionJobResponse> => {
   const base = getEduentryApiBase();
-  const res = await fetch(`${base}/api/quiz/action-jobs/enqueue`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session_key: sessionKey, email }),
-  });
+  const res = await fetchWithMappedNetworkError(
+    `${base}/api/quiz/action-jobs/enqueue`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_key: sessionKey, email }),
+    },
+    base
+  );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw buildError(res.status, json, "Action job could not be enqueued.");
