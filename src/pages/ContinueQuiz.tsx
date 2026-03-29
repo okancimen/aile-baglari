@@ -67,10 +67,18 @@ const ContinueQuiz = () => {
         setChildName(row.child_name || "");
         setChildGender(row.child_gender || "boy");
         setChildAge(row.child_age ?? undefined);
-        const childQuestions = pickRandomPerCategory(
-          quizData.cocuk_testi as Question[],
-          quizData.kategoriler as string[]
-        );
+        const fromDb = row.child_questions;
+        const cats = quizData.kategoriler as string[];
+        const useDb =
+          Array.isArray(fromDb) &&
+          fromDb.length >= cats.length &&
+          fromDb.every((q) => q && typeof q === "object" && "kategori" in q && "soru" in q);
+        const childQuestions = useDb
+          ? (fromDb as Question[])
+          : pickRandomPerCategory(quizData.cocuk_testi as Question[], cats);
+        if (!useDb) {
+          console.warn("[WARNING] ContinueQuiz: child_questions missing or short; static pool");
+        }
         setQuestions(childQuestions);
         setPhase("child-quiz");
         setLoading(false);

@@ -27,6 +27,16 @@ const Index = () => {
     return <AgeSelect onSelect={quiz.selectAge} />;
   }
 
+  if (quiz.phase === "loading-questions") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-4" style={{ background: "var(--gradient-hero)" }}>
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="font-display font-bold text-foreground text-center">Sorular kişiselleştiriliyor…</p>
+        <p className="text-sm text-muted-foreground text-center max-w-md">Bu birkaç saniye sürebilir.</p>
+      </div>
+    );
+  }
+
   if (quiz.phase === "parent-done") {
     return (
       <ParentDone
@@ -35,6 +45,8 @@ const Index = () => {
         childName={quiz.childName}
         childGender={quiz.childGender}
         childAge={quiz.childAge}
+        parentQuestions={quiz.parentQuestions}
+        childQuestions={quiz.childQuestions}
       />
     );
   }

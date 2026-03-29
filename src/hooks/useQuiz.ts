@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import quizData from "@/data/quiz-data.json";
-import { createQuizSession } from "@/lib/quiz-session";
+import { createQuizSession, generateQuizQuestions, type QuizQuestionItem } from "@/lib/quiz-session";
 
 interface Question {
   id: string;
@@ -11,6 +11,7 @@ interface Question {
 type Phase =
   | "landing"
   | "age-select"
+  | "loading-questions"
   | "parent-quiz"
   | "parent-done"
   | "child-quiz"
@@ -29,6 +30,8 @@ function pickRandomPerCategory(questions: Question[], categories: string[]): Que
   return selected;
 }
 
+const CATEGORY_COUNT = (quizData.kategoriler as string[]).length;
+
 export function useQuiz() {
   const [phase, setPhase] = useState<Phase>("landing");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,16 +43,54 @@ export function useQuiz() {
   const [childGender, setChildGender] = useState<"girl" | "boy">("boy");
   const [sessionKey, setSessionKey] = useState<string | null>(null);
   const [persistError, setPersistError] = useState<string | null>(null);
+  const [parentQuestions, setParentQuestions] = useState<QuizQuestionItem[] | null>(null);
+  const [childQuestions, setChildQuestions] = useState<QuizQuestionItem[] | null>(null);
+
+  useEffect(() => {
+    if (phase !== "loading-questions") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { parent, child } = await generateQuizQuestions({
+          child_name: childName || undefined,
+          child_age: childAge,
+          child_gender: childGender,
+        });
+        if (cancelled) return;
+        const okP = parent.length >= CATEGORY_COUNT;
+        const okC = child.length >= CATEGORY_COUNT;
+        setParentQuestions(okP ? parent : null);
+        setChildQuestions(okC ? child : null);
+        if (!okP || !okC) {
+          console.warn("[WARNING] LLM questions short; using static pool", { parent: parent.length, child: child.length });
+        }
+      } catch (e) {
+        console.error("[ERROR] generateQuizQuestions:", e);
+        if (!cancelled) {
+          setParentQuestions(null);
+          setChildQuestions(null);
+        }
+      } finally {
+        if (!cancelled) setPhase("parent-quiz");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, childName, childAge, childGender]);
 
   const questions = useMemo(() => {
+    const cats = quizData.kategoriler as string[];
     if (phase === "parent-quiz") {
-      return pickRandomPerCategory(quizData.ebeveyn_testi as Question[], quizData.kategoriler);
+      if (parentQuestions && parentQuestions.length >= CATEGORY_COUNT) return parentQuestions as Question[];
+      return pickRandomPerCategory(quizData.ebeveyn_testi as Question[], cats);
     }
     if (phase === "child-quiz") {
-      return pickRandomPerCategory(quizData.cocuk_testi as Question[], quizData.kategoriler);
+      if (childQuestions && childQuestions.length >= CATEGORY_COUNT) return childQuestions as Question[];
+      return pickRandomPerCategory(quizData.cocuk_testi as Question[], cats);
     }
     return [];
-  }, [phase]);
+  }, [phase, parentQuestions, childQuestions]);
 
   const currentQuestion = questions[currentIndex] || null;
 
@@ -71,7 +112,6 @@ export function useQuiz() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
-      // Finished current quiz
       const scores = getCategoryScores();
       if (phase === "parent-quiz") {
         setParentScores(scores);
@@ -91,6 +131,8 @@ export function useQuiz() {
               p_child_gender: childGender,
               p_child_age: childAge,
               p_completed: true,
+              p_parent_questions: parentQuestions ?? undefined,
+              p_child_questions: childQuestions ?? undefined,
             });
             const key = typeof row.session_key === "string" ? row.session_key.trim() : "";
             if (!key) {
@@ -131,7 +173,7 @@ export function useQuiz() {
     setChildAge(age);
     setChildName(name);
     setChildGender(gender);
-    setPhase("parent-quiz");
+    setPhase("loading-questions");
     setCurrentIndex(0);
     setAnswers({});
   };
@@ -159,6 +201,8 @@ export function useQuiz() {
     setChildGender("boy");
     setSessionKey(null);
     setPersistError(null);
+    setParentQuestions(null);
+    setChildQuestions(null);
     try {
       const u = new URL(window.location.href);
       u.searchParams.delete("continue");
@@ -190,5 +234,7 @@ export function useQuiz() {
     childGender,
     sessionKey,
     persistError,
+    parentQuestions,
+    childQuestions,
   };
 }

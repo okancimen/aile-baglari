@@ -1,5 +1,11 @@
 import { getEduentryApiBase } from "@/lib/eduentry-api";
 
+export type QuizQuestionItem = {
+  id: string;
+  kategori: string;
+  soru: string;
+};
+
 type CreateQuizSessionPayload = {
   p_parent_scores: Record<string, number>;
   p_email?: string | null;
@@ -8,6 +14,8 @@ type CreateQuizSessionPayload = {
   p_child_scores?: Record<string, number> | null;
   p_completed?: boolean;
   p_child_age?: number | null;
+  p_parent_questions?: QuizQuestionItem[] | null;
+  p_child_questions?: QuizQuestionItem[] | null;
 };
 
 type QuizSessionRow = {
@@ -20,6 +28,8 @@ type QuizSessionRow = {
   child_age: number | null;
   completed: boolean;
   expires_at: string | null;
+  parent_questions?: QuizQuestionItem[] | null;
+  child_questions?: QuizQuestionItem[] | null;
   action_plan: {
     id: string;
     generated_at: string;
@@ -46,6 +56,48 @@ function buildError(status: number, json: unknown, fallback: string): Error {
       : fallback;
   return new Error(`${detail} (HTTP ${status})`);
 }
+
+function normalizeQuestions(raw: unknown): QuizQuestionItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: QuizQuestionItem[] = [];
+  for (const x of raw) {
+    if (x && typeof x === "object" && "kategori" in x && "soru" in x) {
+      const o = x as Record<string, unknown>;
+      out.push({
+        id: String(o.id ?? ""),
+        kategori: String(o.kategori ?? ""),
+        soru: String(o.soru ?? ""),
+      });
+    }
+  }
+  return out;
+}
+
+export const generateQuizQuestions = async (body: {
+  child_name?: string;
+  child_age?: number;
+  child_gender?: "girl" | "boy";
+}): Promise<{ parent: QuizQuestionItem[]; child: QuizQuestionItem[] }> => {
+  const base = getEduentryApiBase();
+  const res = await fetch(`${base}/api/quiz/generate-questions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      child_name: body.child_name ?? null,
+      child_age: body.child_age ?? null,
+      child_gender: body.child_gender ?? null,
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw buildError(res.status, json, "Sorular üretilemedi.");
+  }
+  const j = json as { parent?: unknown; child?: unknown };
+  return {
+    parent: normalizeQuestions(j.parent),
+    child: normalizeQuestions(j.child),
+  };
+};
 
 export const createQuizSession = async (payload: CreateQuizSessionPayload): Promise<{ id: string; session_key: string; email: string | null }> => {
   const base = getEduentryApiBase();

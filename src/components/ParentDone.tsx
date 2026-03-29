@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Baby, CheckCircle, Mail, Loader2, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { createQuizSession } from "@/lib/quiz-session";
+import { createQuizSession, type QuizQuestionItem } from "@/lib/quiz-session";
 import { getEduentryApiBase } from "@/lib/eduentry-api";
 
 interface ParentDoneProps {
@@ -11,6 +11,8 @@ interface ParentDoneProps {
   childName: string;
   childGender: "girl" | "boy";
   childAge: number;
+  parentQuestions: QuizQuestionItem[] | null;
+  childQuestions: QuizQuestionItem[] | null;
 }
 
 const ParentDone = ({
@@ -19,6 +21,8 @@ const ParentDone = ({
   childName,
   childGender,
   childAge,
+  parentQuestions,
+  childQuestions,
 }: ParentDoneProps) => {
   const [showEmailOption, setShowEmailOption] = useState(false);
   const [email, setEmail] = useState("");
@@ -40,6 +44,8 @@ const ParentDone = ({
         p_child_gender: childGender,
         p_child_age: childAge,
         p_completed: false,
+        p_parent_questions: parentQuestions ?? undefined,
+        p_child_questions: childQuestions ?? undefined,
       });
 
       const continueUrl = `${window.location.origin}/?continue=${session.session_key}`;
