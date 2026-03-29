@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
+import LoadingPersonalizedQuestions from "@/components/LoadingPersonalizedQuestions";
 import QuizLanding from "@/components/QuizLanding";
 import QuizQuestion from "@/components/QuizQuestion";
 import QuizComparison from "@/components/QuizComparison";
@@ -28,13 +29,7 @@ const Index = () => {
   }
 
   if (quiz.phase === "loading-questions") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-4" style={{ background: "var(--gradient-hero)" }}>
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="font-display font-bold text-foreground text-center">Sorular kişiselleştiriliyor…</p>
-        <p className="text-sm text-muted-foreground text-center max-w-md">Bu birkaç saniye sürebilir.</p>
-      </div>
-    );
+    return <LoadingPersonalizedQuestions />;
   }
 
   if (quiz.phase === "parent-done") {
